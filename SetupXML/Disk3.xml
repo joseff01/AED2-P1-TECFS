@@ -1,6 +1,6 @@
 <Root>
     <SetupElements>
-        <IPPort>5003</IPPort>
+        <IPPort>5000</IPPort>
         <Path>../RAID/DISK3</Path>
     </SetupElements>
 </Root>
