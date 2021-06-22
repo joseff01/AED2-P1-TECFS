@@ -1,0 +1,6 @@
+<Root>
+    <SetupElements>
+        <IPPort>5000</IPPort>
+        <Path>../RAID/DISK2</Path>
+    </SetupElements>
+</Root>
