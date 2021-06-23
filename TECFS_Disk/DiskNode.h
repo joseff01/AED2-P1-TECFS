@@ -5,15 +5,20 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <iostream>
-#include "../lib/tinyxml2.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <iostream>
+#include <fstream>
+
+#include "../lib/tinyxml2.h"
+#include "../lib/json.hpp"
+#include "DataBlock.h"
+#include "Metadata.h"
 
 using namespace std;
 using namespace tinyxml2;
+using json = nlohmann::json;
 
 class DiskNode {
 
@@ -24,7 +29,11 @@ private:
     string libPath;
     void clientSetup();
     string receiveMsg();
+    json receiveJson();
     void sendMsg(string message);
+    void saveFile(json jsonMessage);
+    void recoverBlock(json jsonMessage);
+    void recoverFile(json jsonMessage);
 public:
     explicit DiskNode(int diskNum);
 
