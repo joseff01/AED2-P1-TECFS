@@ -46,11 +46,11 @@ void ControllerNode::serverSetup() {
     cout << "Waiting for DiskNodes..." << endl;
 
     int connectionCounter = 0;
-    while (connectionCounter < 4){
+    while (connectionCounter < 5){
         FD_ZERO(&readfds);
         FD_SET(sockfd, &readfds);
         maxsd = sockfd;
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 7; ++i) {
             socketDescriptor = clientSocket[i];
 
             if (socketDescriptor > 0){
@@ -87,7 +87,7 @@ void ControllerNode::serverSetup() {
         cout << receiveMsg(newsockfd) << endl;
 
         //add new client to list
-        for (int i = 0; i < 4; i++){
+        for (int i = 0; i < 7; i++){
             //if position is empty
             if( clientSocket[i] == 0 )
             {
@@ -98,7 +98,7 @@ void ControllerNode::serverSetup() {
             }
         }
 
-        for (int i = 0; i < 4; i++){
+        for (int i = 0; i < 7; i++){
             socketDescriptor = clientSocket[i];
 
             if (FD_ISSET( socketDescriptor , &readfds))

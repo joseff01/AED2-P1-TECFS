@@ -12,7 +12,7 @@ int main() {
     bool validInputFlag = true;
     while (validInputFlag){
         cin >> diskNum;
-        if ((1 <= diskNum) && (diskNum <= 4)){
+        if ((1 <= diskNum) && (diskNum <= 5)){
             cout << "Starting Disk " << diskNum << " setup..." << endl;
             validInputFlag = false;
         } else{

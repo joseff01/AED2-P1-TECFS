@@ -36,6 +36,14 @@ DiskNode::DiskNode(int diskNum) {
             }
             break;
         }
+        case 5: {
+            XMLError err = XMLDoc.LoadFile("../../SetupXML/Disk5.xml");
+            if (err != XML_SUCCESS) {
+                cout << "Error loading file: " << (int) err << endl;
+                cout << "Error loading file: " << XMLDoc.ErrorName() << endl;
+            }
+            break;
+        }
     }
     XMLNode *pRoot = XMLDoc.FirstChild();
     XMLElement *pSetupElements = pRoot->FirstChildElement("SetupElements");

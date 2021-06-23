@@ -18,7 +18,7 @@ using namespace std;
 class ControllerNode {
 private:
     int portNo = 5000;
-    int sockfd, newsockfd ,clientSocket[4], maxsd, socketDescriptor, activity, valread;
+    int sockfd, newsockfd ,clientSocket[7], maxsd, socketDescriptor, activity, valread;
     fd_set readfds;
     char buffer[1025];
     void serverSetup();
