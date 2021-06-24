@@ -56,37 +56,38 @@ DiskNode::DiskNode(int diskNum) {
 
     //Setup client-server connection
     clientSetup();
-    /*
+
+    //RequestLoop
     bool closeFlag = true;
     while (closeFlag){
         json jsonMessage = receiveJson();
         switch ((int)jsonMessage["Case"]) {
-            case 0:{
+            case CLOSE:{
                 closeFlag = false;
                 break;
             }
-            case 1:{
+            case SAVE:{
                 saveFile(jsonMessage);
                 break;
             }
-            case 2:{
+            case WHOLE_BLOCK:{
                 recoverBlock(jsonMessage);
                 break;
             }
-            case 3:{
+            case FILE_FROM_NUM:{
                 recoverFile(jsonMessage);
+                break;
+            }
+            case METADATA_FROM_NUM:{
+                recoverFileMetadata(jsonMessage);
+                break;
+            }
+            case FILE_AMOUNT:{
+                recoverFileAmount(jsonMessage);
                 break;
             }
         }
     }
-     */
-    //TESTS REMOVE LATER
-    json jsonExample;
-    //saveFile(jsonExample);
-    //recoverFileAmount(jsonExample);
-    //recoverFile(jsonExample);
-    recoverFileMetadata(jsonExample);
-    receiveMsg();
 
 }
 
@@ -165,7 +166,7 @@ void DiskNode::saveFile(json jsonMessage) {
      *
      */
     string decodedData = "forthMessage"; //CHANGE LATER
-    string fileName = "pichulafelizcuatro"; //CHANGE LATER
+    string fileName = "testFile"; //CHANGE LATER
     int decodedDataLen = decodedData.length();
     ifstream iMetadataFile;
     string metadataPath = libPath;

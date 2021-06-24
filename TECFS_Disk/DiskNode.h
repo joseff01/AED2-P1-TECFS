@@ -12,6 +12,7 @@
 #include <fstream>
 
 #include "../lib/tinyxml2.h"
+#include "../lib/RequestConstants.h"
 #include "../lib/json.hpp"
 #include "DataBlock.h"
 #include "Metadata.h"

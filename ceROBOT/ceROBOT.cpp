@@ -72,9 +72,37 @@ void ceROBOT::sendMsg(string stringMsg) {
 
 void ceROBOT::sendFileController() {
     while(true){
+        cout << "Enter directory of files to add to the RAID system: " << endl;
         cin >> libPath;
-        for (const auto & entry : fs::directory_iterator(libPath))
+        if (libPath == "EXIT"){
+            break;
+        }
+        for (const auto & entry : fs::directory_iterator(libPath)) {
             cout << entry.path() << endl;
-        break;
+            string fileName = entry.path().filename();
+            cout << fileName << endl;
+            ifstream file(entry.path());
+            stringstream streamBuffer;
+            streamBuffer << file.rdbuf();
+            string fileContents = streamBuffer.str();
+            cout << fileContents;
+            json fileJson;
+            fileJson["case"] = CEROBOT_REQUEST;
+            /*
+             *
+             *
+             * HUFFMAN ENCODING OF FILENAME AND CONTENTS
+             *
+             *
+             */
+            //fileJson["fileName"] = encodedFileName;
+            //fileJson["fileContents"] = encodedFileContents;
+            /*
+             *
+             * SEND MESSAGE TO CONTROLLER NODE
+             *
+             *
+             */
+        }
     }
 }

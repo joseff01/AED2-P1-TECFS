@@ -7,5 +7,6 @@ const int WHOLE_BLOCK       = 2;
 const int FILE_FROM_NUM     = 3;
 const int METADATA_FROM_NUM = 4;
 const int FILE_AMOUNT       = 5;
+const int CEROBOT_REQUEST   = 6;
 
 #endif

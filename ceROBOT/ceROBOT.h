@@ -14,6 +14,7 @@
 #include <experimental/filesystem>
 
 #include "../lib/json.hpp"
+#include "../lib/RequestConstants.h"
 
 using namespace std;
 using json = nlohmann::json;
