@@ -1,4 +1,5 @@
 #include "ControllerNode.h"
+#include <stdexcept>
 
 ControllerNode::ControllerNode()
 {
@@ -190,8 +191,6 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
 
     // stringDivs.print();
 
-    // Pasar a huffman TODO
-
     // Saber dónde va la paridad
 
     // mapa
@@ -204,21 +203,21 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
     // equation to determine p disk: 4 - block#
 
     // Pedir cantidad de archivos
-    sendMsg(clientSocket[0], json({{"case", FILE_AMOUNT}}).dump());
+    sendMsg(clientSocket[0], json({{"Case", FILE_AMOUNT}}).dump());
     json amountResult = json::parse(receiveMsg(clientSocket[0]));
 
-    int fileAmount = amountResult["amount"].get<int>(); // TODO: change to actual name of entry
+    int fileAmount = amountResult["Amount"].get<int>(); // TODO: change to actual name of entry
 
     // Revisar si va a haber overflow y si sí, mix n' match los strings
-    sendMsg(clientSocket[0], json({{"case", METADATA_FROM_NUM}, {"num", fileAmount}}).dump());
+    sendMsg(clientSocket[0], json({{"Case", METADATA_FROM_NUM},
+                                   {"Num", fileAmount}})
+                                 .dump());
     json metadataResult = json::parse(receiveMsg(clientSocket[0]));
 
-    int lastFileSize = metadataResult["file size"].get<int>();
-    int firstAvailableBit = metadataResult["start bit"].get<int>() + lastFileSize; // TODO: change to actual names of entries
+    int lastFileSize = metadataResult["File size"].get<int>();
+    int firstAvailableBit = metadataResult["Start bit"].get<int>() + lastFileSize; // TODO: change to actual names of entries
 
     int starterBlock = (int)firstAvailableBit / 512;
-    // int overflowBlocks = (int)((firstAvailableBit + lastFileSize) / 512) - starterBlock;
-
     int bitsRemainingInBlock = 512 - (firstAvailableBit % 512);
     int bitsRemainingForFile = lengthFourth;
     int currentBlock = starterBlock;
@@ -253,6 +252,7 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
     if (currentBlock > 4)
     {
         std::cout << "ERROR: archivo intentando ser guardado excede la memoria máxima disponible en el sistema";
+        throw std::overflow_error("Archivo intentando ser guardado excede la memoria máxima disponible en el sistema");
     }
 
     int parityDisk = 4 - currentBlock;
@@ -274,7 +274,16 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
         finalStrings[disk].append(stringDivs[listIndex].substr(lengthFourth - bitsRemainingForFile, bitsRemainingForFile));
     }
 
+    // TODO huffman encoding
+    List<std::string> huffmanStrings = finalStrings;
+
     // mandar request final a los discos
+    for (int disk = 0; disk < 5; disk++)
+    {
+        sendMsg(clientSocket[disk], json({{"Name", fileName},
+                                          {"Contents", huffmanStrings[disk]}})
+                                        .dump());
+    }
 }
 
 std::string ControllerNode::letters2bin(std::string str)

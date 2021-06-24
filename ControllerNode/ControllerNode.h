@@ -21,7 +21,9 @@ class ControllerNode
 {
 private:
     int portNo = 5000;
-    int sockfd, newsockfd, clientSocket[7], maxsd, socketDescriptor, activity, valread;
+    int sockfd, newsockfd, maxsd, socketDescriptor, activity, valread;
+    // 0-4 disknodes, 5 ceSearch, 6 ceRobot
+    int clientSocket[7];
     fd_set readfds;
     char buffer[1025];
     void serverSetup();
@@ -30,12 +32,13 @@ private:
 
     //binary conversion
     std::string bin2letters(std::string str);
+    std::string letters2bin(std::string str);
 
+    // store file
     void storeFile(std::string fileName, std::string fileContents);
 
 public:
     ControllerNode();
-    std::string letters2bin(std::string str);
 };
 
 #endif //CONTROLLERNODE_CONTROLLERNODE_H
