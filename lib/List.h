@@ -8,7 +8,7 @@
 #include <initializer_list>
 #include "Node.h"
 
-#include <json.hpp>
+#include "json.hpp"
 
 using json = nlohmann::json;
 
@@ -27,7 +27,7 @@ private:
      * \param methodName for supplying the name of the method where this was called from
      * \throws out_of_range whenever called
      */
-    void subError(const char *methodName)
+    void subError(const char *methodName) const
     {
         char msg[] = "Subscript out of range when calling List function ";
         std::cout << msg << methodName << '\n';
@@ -40,7 +40,7 @@ private:
     * \param position the position to evaluate
     * \throws out_of_range if checked position is invalid
     */
-    void checkPos(const size_t position, const char *methodName)
+    void checkPos(const size_t position, const char *methodName) const
     {
         if (position < 0 || position >= this->length())
         {
@@ -111,7 +111,7 @@ public:
     * \return T the element at the specified position 
     * \throws out_of_range if position is out of bounds (position >= length())
     */
-    T at(const size_t position)
+    const T &at(const size_t position) const
     {
         checkPos(position, "at()");
 
@@ -124,15 +124,27 @@ public:
         return current->value;
     }
 
+    //! Non-const version of at()
+    T &at(const size_t position)
+    {
+        return const_cast<T &>(static_cast<const List<T> &>(*this).at(position));
+    }
+
     /*!
     * \brief Returns a reference to the element at position _position_ in the vector container.
     * 
     * \param position position of the element in the container
     * \return T the element at the specified position 
     */
-    T operator[](const size_t position)
+    const T &operator[](const size_t position) const
     {
         return at(position);
+    }
+
+    //! Non-const version of [] operator
+    T &operator[](const size_t position)
+    {
+        return const_cast<T &>(static_cast<const List<T> &>(*this)[position]);
     }
 
     /*!
@@ -338,6 +350,58 @@ public:
         current->value = newValue;
     }
 
+    /*!
+     * \brief Creates a new list, where it copies list1's contents and then adds list2 contents after list1's
+     * 
+     * \param list1 The initial list to be copied and added to
+     * \param list2 The list added on top of list1
+     * \return List<T> A new list comprised of the contents of both input lists
+     */
+    static List<T> cat(const List<T> list1, const List<T> list2)
+    {
+        List<T> newList(list1);
+        for (size_t i = 0; i < list2.length(); i++)
+        {
+            newList.push_back(list2[i]);
+        }
+        return newList;
+    }
+
+    /*!
+     * \brief Concatenates the 2 right hand side list to the left hand side one and returns a new list containing the result
+     * 
+     * \param other right hand side list, lists must match type
+     * \return List<T> returns new list containing the result of concatenating the lists
+     */
+    const List<T> operator+(const List<T> other) const
+    {
+        return cat(*this, other);
+    }
+
+    /*!
+     * \brief Concatenates the 2 right hand side list to the left hand side one and returns a new list containing the result
+     * 
+     * \param other right hand side list, lists must match type
+     * \return List<T> returns new list containing the result of concatenating the lists
+     */
+    List<T> &operator+=(const List<T> &other)
+    {
+        *this = *this + other;
+        return *this;
+    }
+
+    /*!
+     * \brief Concatenates the value on the right hand side to the list
+     * 
+     * \param right hand side value
+     * \return List<T> returns new list containing the result of concatenating the value to the list
+     */
+    List<T> &operator+=(const T &val)
+    {
+        this->push_back(val);
+        return *this;
+    }
+
     //! Empty out the contents of the list by calling pop_back() repeatedly
     void clear()
     {
@@ -354,7 +418,7 @@ public:
     * 
     * \return size_t length of the list
     */
-    size_t length()
+    size_t length() const
     {
         return this->listSize;
     }
@@ -382,6 +446,11 @@ public:
     void print()
     {
         Node<T> *current = head;
+        if (current == nullptr)
+        {
+            std::cout << "[]" << std::endl;
+            return;
+        }
         std::cout << "[" << current->value;
         while (current->next != nullptr)
         {
@@ -441,6 +510,11 @@ template <typename U>
 std::ostream &operator<<(std::ostream &os, const List<U> &l)
 {
     Node<U> *current = l.head;
+    if (current == nullptr)
+    {
+        os << "[]";
+        return os;
+    }
     os << "[" << current->value;
     while (current->next != nullptr)
     {
