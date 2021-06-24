@@ -1,5 +1,10 @@
 #include "DiskNode.h"
 
+/**
+ * @brief DiskNode::DiskNode Constructor of the DiskNode object. Searches through it's indicated XMLfile with the info needed to connect
+ * with ControllerNode. After the main configuration is done, it starts a loop that will always wait for a request from ControllerNode
+ * @param diskNum integer that indicates the number of disk that it will manage. (1-5)
+ */
 DiskNode::DiskNode(int diskNum) {
     //Read XML for Info
     XMLDocument XMLDoc;
@@ -91,6 +96,9 @@ DiskNode::DiskNode(int diskNum) {
 
 }
 
+/**
+ * @brief DiskNode::clientSetup Method in charge of setting up connection with ControllerNode app
+ */
 void DiskNode::clientSetup() {
     int option = 1;
     struct sockaddr_in serv_addr;
@@ -123,6 +131,10 @@ void DiskNode::clientSetup() {
     sendMsg("Client Message Received. Connection established!");
 }
 
+/**
+ * @brief DiskNode::receiveMsg Wait for a message to arrive from ControllerNode. When it arrives, it returns it
+ * @return stringBuffer string of the message received from ControllerNode
+ */
 string DiskNode::receiveMsg(){
     memset(buffer, 0, 1025);
     int n = read(sockfd, buffer, 1025);
@@ -134,6 +146,10 @@ string DiskNode::receiveMsg(){
     return stringBuffer;
 }
 
+/**
+ * @brief DiskNode::receiveJson Wait for a message to arrive from ControllerNode. When it arrives, it parses it as a json object and returns it
+ * @return jsonBuffer json object of the message received from ControllerNode
+ */
 json DiskNode::receiveJson(){
     memset(buffer, 0, 1025);
     int n = read(sockfd, buffer, 1025);
@@ -145,6 +161,10 @@ json DiskNode::receiveJson(){
     return jsonBuffer;
 }
 
+/**
+ * @brief DiskNode::sendMsg Sends a string message to ControllerNode
+ * @param stringMsg Message to send to ControllerNode
+ */
 void DiskNode::sendMsg(string stringMsg) {
     memset(buffer, 0, 1025);
     strncpy(buffer, stringMsg.c_str(), 1025);
@@ -156,12 +176,16 @@ void DiskNode::sendMsg(string stringMsg) {
     }
 }
 
+/**
+ * @brief DiskNode::saveFile Saves the message sent from ControllerNode in the corresponding block, and generates and stores the metadata of the file
+ * @param jsonMessage json object of the message received from Controller node. It contains the name of the file and the contents, all encrypted with
+ * Huffman code
+ */
 void DiskNode::saveFile(json jsonMessage) {
     //string encodedData = jsonMessage["Data"];
-    //int fileNumber = jsonMessage["File"];
     /*
      *
-     * HUFFMAN DECODING+
+     * HUFFMAN DECODING
      *
      *
      */
@@ -356,6 +380,11 @@ void DiskNode::saveFile(json jsonMessage) {
     }
 }
 
+/**
+ * @brief DiskNode::recoverBlock Sends to ControllerNode the indicated block of data.
+ * @param jsonMessage json object of the message received from Controller node. It contains the number of the requested block, encrypted with
+ * Huffman code
+ */
 void DiskNode::recoverBlock(json jsonMessage) {
     /*
      *
@@ -403,6 +432,11 @@ void DiskNode::recoverBlock(json jsonMessage) {
          */
 }
 
+/**
+ * @brief DiskNode::recoverFile Sends to ControllerNode the indicated file of data.
+ * @param jsonMessage json object of the message received from Controller node. It contains the number of the requested file, encrypted with
+ * Huffman code.
+ */
 void DiskNode::recoverFile(json jsonMessage) {
     /*
      *
@@ -538,6 +572,10 @@ void DiskNode::recoverFile(json jsonMessage) {
     }
 }
 
+/**
+ * @brief DiskNode::recoverFileAmount Sends to ControllerNode the amount of files currently stored in the Raid System.
+ * @param jsonMessage json object of the message received from Controller node.
+ */
 void DiskNode::recoverFileAmount(json jsonMessage) {
     /*
     *
@@ -575,6 +613,10 @@ void DiskNode::recoverFileAmount(json jsonMessage) {
 
 }
 
+/**
+ * @brief DiskNode::recoverFileMetadata Sends to ControllerNode all of the metadata that correspond to the number of the file specified in jsonMessage.
+ * @param jsonMessage json object of the message received from Controller node. Contains the number of the file to return the metadata of.
+ */
 void DiskNode::recoverFileMetadata(json jsonMessage) {
     /*
      *

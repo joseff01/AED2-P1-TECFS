@@ -1,10 +1,16 @@
 #include "ceROBOT.h"
 
+/**
+ * @brief ceROBOT::ceROBOT Constructor of the ceROBOT object. Calls all needed methods to make the object work
+ */
 ceROBOT::ceROBOT() {
-    //clientSetup();
+    clientSetup();
     sendFileController();
 }
 
+/**
+ * @brief ceROBOT::clientSetup Method in charge of setting up connection with ControllerNode app
+ */
 void ceROBOT::clientSetup() {
     int option = 1;
     struct sockaddr_in serv_addr;
@@ -37,6 +43,10 @@ void ceROBOT::clientSetup() {
     sendMsg("Client Message Received. Connection established!");
 }
 
+/**
+ * @brief ceROBOT::receiveMsg Wait for a message to arrive from ControllerNode. When it arrives, it returns it
+ * @return stringBuffer string of the message received from ControllerNode
+ */
 string ceROBOT::receiveMsg(){
     memset(buffer, 0, 1025);
     int n = read(sockfd, buffer, 1025);
@@ -48,6 +58,10 @@ string ceROBOT::receiveMsg(){
     return stringBuffer;
 }
 
+/**
+ * @brief ceROBOT::receiveJson Wait for a message to arrive from ControllerNode. When it arrives, it parses it as a json object and returns it
+ * @return jsonBuffer json object of the message received from ControllerNode
+ */
 json ceROBOT::receiveJson(){
     memset(buffer, 0, 1025);
     int n = read(sockfd, buffer, 1025);
@@ -59,6 +73,10 @@ json ceROBOT::receiveJson(){
     return jsonBuffer;
 }
 
+/**
+ * @brief ceROBOT::sendMsg Sends a string message to ControllerNode
+ * @param stringMsg Message to send to ControllerNode
+ */
 void ceROBOT::sendMsg(string stringMsg) {
     memset(buffer, 0, 1025);
     strncpy(buffer, stringMsg.c_str(), 1025);
@@ -70,6 +88,10 @@ void ceROBOT::sendMsg(string stringMsg) {
     }
 }
 
+/**
+ * @brief ceROBOT::sendFileController main ceROBOT method that, given a directory trough the console, will search all files in the
+ * directory and will send the name of every file and it's contents to ControllerNode
+ */
 void ceROBOT::sendFileController() {
     while(true){
         cout << "Enter directory of files to add to the RAID system: " << endl;

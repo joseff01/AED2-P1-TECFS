@@ -20,12 +20,27 @@ using namespace std;
 using json = nlohmann::json;
 namespace fs = std::experimental::filesystem;
 
+/**
+ * @brief ceRobot Interface to insert text files into the RAID filesystem through communication with ControllerNode
+ */
 class ceROBOT {
 
 private:
+    /**
+     * @brief portNo Number of port to connect to ControllerNode
+     */
     int portNo = 5000;
+    /**
+     * @brief sockfd int identifier to communicate with ControllerNode
+     */
     int sockfd;
+    /**
+     * @brief buffer char array that's used to send and receive the data from ControllerNode
+     */
     char buffer[1025];
+    /**
+     * @brief libPath stores the path of the directory to analize
+     */
     string libPath;
     void clientSetup();
     string receiveMsg();
