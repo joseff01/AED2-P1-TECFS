@@ -143,6 +143,7 @@ void ControllerNode::serverSetup()
 
 std::string ControllerNode::receiveMsg(int receiveSockfd)
 {
+    // TODO: agregar huffman decoding y recibir 2 mensajes, el segundo tiene la info para descomprimir
     memset(buffer, 0, 1025);
     int n = read(receiveSockfd, buffer, 1025);
     if (n < 0)
@@ -156,6 +157,7 @@ std::string ControllerNode::receiveMsg(int receiveSockfd)
 
 void ControllerNode::sendMsg(int sendSockfd, std::string Msg)
 {
+    // TODO: agregar huffman encoding y enviar 2 mensajes, el segundo tiene la info para descomprimir
     if (send(sendSockfd, Msg.c_str(), strlen(Msg.c_str()), 0) != strlen(Msg.c_str()))
     {
         perror("send");
@@ -174,6 +176,13 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
     for (int i = 0; i < 4; i++)
     {
         stringDivs.push_back(binContents.substr(i * lengthFourth, lengthFourth));
+    }
+
+    if (lengthFourth > 512)
+    {
+        std::cout << "Error: file should be less than 64 characters long";
+        return;
+        throw std::overflow_error("File size too big");
     }
 
     // Calcular string de paridad
@@ -206,16 +215,16 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
     sendMsg(clientSocket[0], json({{"Case", FILE_AMOUNT}}).dump());
     json amountResult = json::parse(receiveMsg(clientSocket[0]));
 
-    int fileAmount = amountResult["Amount"].get<int>(); // TODO: change to actual name of entry
+    int fileAmount = amountResult["Amount"].get<int>();
 
     // Revisar si va a haber overflow y si sí, mix n' match los strings
     sendMsg(clientSocket[0], json({{"Case", METADATA_FROM_NUM},
-                                   {"Num", fileAmount}})
+                                   {"Num", fileAmount - 1}})
                                  .dump());
     json metadataResult = json::parse(receiveMsg(clientSocket[0]));
 
     int lastFileSize = metadataResult["File size"].get<int>();
-    int firstAvailableBit = metadataResult["Start bit"].get<int>() + lastFileSize; // TODO: change to actual names of entries
+    int firstAvailableBit = metadataResult["Start bit"].get<int>() + lastFileSize;
 
     int starterBlock = (int)firstAvailableBit / 512;
     int bitsRemainingInBlock = 512 - (firstAvailableBit % 512);
@@ -252,6 +261,7 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
     if (currentBlock > 4)
     {
         std::cout << "ERROR: archivo intentando ser guardado excede la memoria máxima disponible en el sistema";
+        return;
         throw std::overflow_error("Archivo intentando ser guardado excede la memoria máxima disponible en el sistema");
     }
 
@@ -274,14 +284,12 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
         finalStrings[disk].append(stringDivs[listIndex].substr(lengthFourth - bitsRemainingForFile, bitsRemainingForFile));
     }
 
-    // TODO huffman encoding
-    List<std::string> huffmanStrings = finalStrings;
-
     // mandar request final a los discos
     for (int disk = 0; disk < 5; disk++)
     {
-        sendMsg(clientSocket[disk], json({{"Name", fileName},
-                                          {"Contents", huffmanStrings[disk]}})
+        sendMsg(clientSocket[disk], json({{"Case", SAVE},
+                                          {"Name", fileName},
+                                          {"Contents", finalStrings[disk]}})
                                         .dump());
     }
 }
@@ -310,4 +318,94 @@ std::string ControllerNode::bin2letters(std::string str)
     }
 
     return charStr;
+}
+
+List<std::string> ControllerNode::searchFiles(std::string searchString)
+{
+    // Pasar searchString a lowercase
+    for (auto &c : searchString)
+    {
+        c = tolower(c);
+    }
+
+    // Pedir cantidad de archivos
+    sendMsg(clientSocket[0], json({{"Case", FILE_AMOUNT}}).dump());
+    json amountResult = json::parse(receiveMsg(clientSocket[0]));
+
+    int fileAmount = amountResult["Amount"].get<int>();
+
+    // Request metadata of files and check name for substrings
+    List<std::string> foundNames;
+
+    for (int i = 0; i < fileAmount; i++)
+    {
+        sendMsg(clientSocket[0], json({{"Case", METADATA_FROM_NUM},
+                                       {"Num", i}})
+                                     .dump());
+        json metadataResult = json::parse(receiveMsg(clientSocket[0]));
+
+        std::string fileName = metadataResult["Name"].get<std::string>();
+        std::string lowercaseName = fileName;
+
+        // Pasar nombre a lowercase
+        for (auto &c : lowercaseName)
+        {
+            c = tolower(c);
+        }
+
+        // Revisar si es substring
+        if (lowercaseName.find(searchString) != std::string::npos)
+        {
+            std::cout << "found!" << '\n';
+            foundNames.push_back(fileName);
+        }
+    }
+    return foundNames;
+}
+
+std::string ControllerNode::retrieveFile(std::string fileName)
+{
+
+    // Pedir cantidad de archivos
+    sendMsg(clientSocket[0], json({{"Case", FILE_AMOUNT}}).dump());
+    json amountResult = json::parse(receiveMsg(clientSocket[0]));
+
+    int fileAmount = amountResult["Amount"].get<int>();
+
+    // Request contents of files and check name with fileName
+    List<std::string> foundNames;
+
+    for (int i = 0; i < fileAmount; i++)
+    {
+        sendMsg(clientSocket[0], json({{"Case", METADATA_FROM_NUM},
+                                       {"Num", i}})
+                                     .dump());
+        json metadataResult = json::parse(receiveMsg(clientSocket[0]));
+
+        std::string receivedFileName = metadataResult["Name"].get<std::string>();
+
+        if (fileName.compare(receivedFileName) == 0)
+        {
+            std::cout << "Found the file" << std::endl;
+
+            sendMsg(clientSocket[0], json({{"Case", FILE_FROM_NUM},
+                                           {"Num", i}})
+                                         .dump());
+            json fileResult = json::parse(receiveMsg(clientSocket[0]));
+            // check field IfExists
+            if (fileResult["IfExists"].get<bool>())
+            {
+
+                std::string binContents = fileResult["Contents"].get<std::string>();
+                std::string contents = bin2letters(binContents);
+                return contents;
+            }
+            else
+            {
+                //reconstruir con paridad
+            }
+        }
+    }
+    std::cout << "Error: no file found that goes by name '" << fileName << "'" << std::endl;
+    return fileName;
 }

@@ -37,6 +37,10 @@ private:
     // store file
     void storeFile(std::string fileName, std::string fileContents);
 
+    // read files
+    List<std::string> searchFiles(std::string searchString);
+    std::string retrieveFile(std::string fileName);
+
 public:
     ControllerNode();
 };
