@@ -1,19 +1,22 @@
 #include "ControllerNode.h"
 
-ControllerNode::ControllerNode() {
+ControllerNode::ControllerNode()
+{
     serverSetup();
 }
 
-void ControllerNode::serverSetup() {
+void ControllerNode::serverSetup()
+{
     int option = 1;
     struct sockaddr_in serv_addr;
 
     // Initialize all sockets
-    for (int & i : clientSocket) {
+    for (int &i : clientSocket)
+    {
         i = 0;
     }
 
-    cout << "Opening Socket..." << endl;
+    std::cout << "Opening Socket..." << std::endl;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &option, sizeof(int)) == -1)
     {
@@ -30,88 +33,98 @@ void ControllerNode::serverSetup() {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(portNo);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    cout << "Binding to port " << portNo << "..." << endl;
+    std::cout << "Binding to port " << portNo << "..." << std::endl;
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         perror("Binding Failed");
         exit(EXIT_FAILURE);
     }
 
-    if(listen(sockfd, 6) < 0){
+    if (listen(sockfd, 6) < 0)
+    {
         perror("listen");
         exit(EXIT_FAILURE);
     }
 
     int addrLen = sizeof(serv_addr);
-    cout << "Waiting for DiskNodes..." << endl;
+    std::cout << "Waiting for DiskNodes..." << std::endl;
 
     int connectionCounter = 0;
-    while (connectionCounter < 5){
+    while (connectionCounter < 5)
+    {
         FD_ZERO(&readfds);
         FD_SET(sockfd, &readfds);
         maxsd = sockfd;
-        for (int i = 0; i < 7; ++i) {
+        for (int i = 0; i < 7; ++i)
+        {
             socketDescriptor = clientSocket[i];
 
-            if (socketDescriptor > 0){
-                FD_SET(socketDescriptor,&readfds);
+            if (socketDescriptor > 0)
+            {
+                FD_SET(socketDescriptor, &readfds);
             }
 
-            if (socketDescriptor > maxsd){
+            if (socketDescriptor > maxsd)
+            {
                 maxsd = socketDescriptor;
             }
         }
 
-        activity = select( maxsd + 1, &readfds, NULL, NULL, NULL);
+        activity = select(maxsd + 1, &readfds, NULL, NULL, NULL);
 
-        if ((activity < 0) && (errno != EINTR)){
-            cout << "select error" << endl;
+        if ((activity < 0) && (errno != EINTR))
+        {
+            std::cout << "select error" << std::endl;
         }
 
-        if (FD_ISSET(sockfd, &readfds)){
-            if ((newsockfd = accept(sockfd,(struct sockaddr *)&serv_addr, (socklen_t*)&addrLen)) < 0){
+        if (FD_ISSET(sockfd, &readfds))
+        {
+            if ((newsockfd = accept(sockfd, (struct sockaddr *)&serv_addr, (socklen_t *)&addrLen)) < 0)
+            {
                 perror("accept");
                 exit(EXIT_FAILURE);
             }
         }
 
-        printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , newsockfd , inet_ntoa(serv_addr.sin_addr) , ntohs(serv_addr.sin_port));
+        printf("New connection , socket fd is %d , ip is : %s , port : %d \n", newsockfd, inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
 
-        if( send(newsockfd, "Server Message Received. Connection established!", strlen("Server Message Received. Connection established!"), 0) != strlen("Server Message Received. Connection established!") )
+        if (send(newsockfd, "Server Message Received. Connection established!", strlen("Server Message Received. Connection established!"), 0) != strlen("Server Message Received. Connection established!"))
         {
             perror("send");
         }
 
         puts("Welcome message sent successfully");
 
-        cout << receiveMsg(newsockfd) << endl;
+        std::cout << receiveMsg(newsockfd) << std::endl;
 
         //add new client to list
-        for (int i = 0; i < 7; i++){
+        for (int i = 0; i < 7; i++)
+        {
             //if position is empty
-            if( clientSocket[i] == 0 )
+            if (clientSocket[i] == 0)
             {
                 clientSocket[i] = newsockfd;
-                printf("Adding to list of sockets as %d\n" , i);
+                printf("Adding to list of sockets as %d\n", i);
                 connectionCounter++;
                 break;
             }
         }
 
-        for (int i = 0; i < 7; i++){
+        for (int i = 0; i < 7; i++)
+        {
             socketDescriptor = clientSocket[i];
 
-            if (FD_ISSET( socketDescriptor , &readfds))
+            if (FD_ISSET(socketDescriptor, &readfds))
             {
                 //Check if it was for closing , and also read the incoming message
-                if ((valread = read( socketDescriptor , buffer, 1024)) == 0)
+                if ((valread = read(socketDescriptor, buffer, 1024)) == 0)
                 {
                     //Somebody disconnected , get his details and print
-                    getpeername(socketDescriptor , (struct sockaddr*)&serv_addr , (socklen_t*)&addrLen);
-                    printf("Host disconnected , ip %s , port %d \n" ,inet_ntoa(serv_addr.sin_addr) , ntohs(serv_addr.sin_port));
+                    getpeername(socketDescriptor, (struct sockaddr *)&serv_addr, (socklen_t *)&addrLen);
+                    printf("Host disconnected , ip %s , port %d \n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
 
                     //Close the socket and mark as 0 in list for reuse
-                    close( socketDescriptor );
+                    close(socketDescriptor);
                     clientSocket[i] = 0;
                 }
                 //Echo back the message that came in
@@ -119,27 +132,60 @@ void ControllerNode::serverSetup() {
                 {
                     //set the string terminating NULL byte on the end of the data read
                     buffer[valread] = '\0';
-                    send(socketDescriptor , buffer , strlen(buffer) , 0 );
+                    send(socketDescriptor, buffer, strlen(buffer), 0);
                 }
             }
         }
     }
 }
 
-string ControllerNode::receiveMsg(int receiveSockfd) {
+std::string ControllerNode::receiveMsg(int receiveSockfd)
+{
     memset(buffer, 0, 1025);
-    int n = read(receiveSockfd,buffer,1025);
-    if (n < 0) {
+    int n = read(receiveSockfd, buffer, 1025);
+    if (n < 0)
+    {
         perror("ERROR reading from socket");
         exit(1);
     }
-    string receivedMsg = string(buffer);
+    std::string receivedMsg = std::string(buffer);
     return receivedMsg;
 }
 
-void ControllerNode::sendMsg(int sendSockfd, string Msg) {
-    if( send(sendSockfd, Msg.c_str(), strlen(Msg.c_str()), 0) != strlen(Msg.c_str()) )
+void ControllerNode::sendMsg(int sendSockfd, std::string Msg)
+{
+    if (send(sendSockfd, Msg.c_str(), strlen(Msg.c_str()), 0) != strlen(Msg.c_str()))
     {
         perror("send");
     }
+}
+
+void ControllerNode::storeFile(std::string fileName, std::string fileContents)
+{
+}
+
+std::string ControllerNode::letters2bin(std::string str)
+{
+    std::string binaryStr;
+
+    for (int i = 0; i < str.length(); ++i)
+    {
+        std::bitset<8> charBits(str[i]);
+        binaryStr.append(charBits.to_string());
+    }
+
+    return binaryStr;
+}
+
+std::string ControllerNode::bin2letters(std::string str)
+{
+    std::string charStr;
+
+    for (int i = 0; i < str.length(); i += 8)
+    {
+        char c = static_cast<char>(std::stoi(str.substr(i, 8), nullptr, 2));
+        charStr.append(1, c);
+    }
+
+    return charStr;
 }

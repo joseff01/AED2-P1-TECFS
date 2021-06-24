@@ -12,21 +12,29 @@
 #include <errno.h>
 #include <unistd.h>
 #include <iostream>
+#include <bitset>
 
-using namespace std;
+#include "../lib/RequestConstants.h"
 
-class ControllerNode {
+class ControllerNode
+{
 private:
     int portNo = 5000;
-    int sockfd, newsockfd ,clientSocket[7], maxsd, socketDescriptor, activity, valread;
+    int sockfd, newsockfd, clientSocket[7], maxsd, socketDescriptor, activity, valread;
     fd_set readfds;
     char buffer[1025];
     void serverSetup();
-    string receiveMsg(int receiveSockfd);
-    void sendMsg(int sendSockfd, string Msg);
+    std::string receiveMsg(int receiveSockfd);
+    void sendMsg(int sendSockfd, std::string Msg);
+
+    //binary conversion
+    std::string bin2letters(std::string str);
+
+    void storeFile(std::string fileName, std::string fileContents);
+
 public:
     ControllerNode();
+    std::string letters2bin(std::string str);
 };
-
 
 #endif //CONTROLLERNODE_CONTROLLERNODE_H

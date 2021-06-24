@@ -1,7 +1,8 @@
 #include <iostream>
 #include "ControllerNode.h"
 
-int main() {
+int main()
+{
     ControllerNode controllerNode;
     return 0;
 }
