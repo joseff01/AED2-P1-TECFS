@@ -111,3 +111,6 @@ fabric.properties
 
 # outputs
 *.out
+
+# startup script
+TECFS_Disk/startup.sh
