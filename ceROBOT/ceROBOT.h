@@ -1,5 +1,5 @@
-#ifndef TECFS_DISK_DISKNODE_H
-#define TECFS_DISK_DISKNODE_H
+#ifndef CEROBOT_CEROBOT_H
+#define CEROBOT_CEROBOT_H
 
 #include <cstdio>
 #include <cstdlib>
@@ -10,27 +10,26 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <fstream>
+#include <string>
+#include <experimental/filesystem>
 
-#include "../lib/tinyxml2.h"
-#include "../lib/RequestConstants.h"
 #include "../lib/json.hpp"
-#include "DataBlock.h"
-#include "Metadata.h"
+#include "../lib/RequestConstants.h"
 
 using namespace std;
-using namespace tinyxml2;
 using json = nlohmann::json;
+namespace fs = std::experimental::filesystem;
 
 /**
- * @brief DiskNode Object that manages completely a single disk of the Raid system
+ * @brief ceRobot Interface to insert text files into the RAID filesystem through communication with ControllerNode
  */
-class DiskNode {
+class ceROBOT {
 
 private:
     /**
      * @brief portNo Number of port to connect to ControllerNode
      */
-    int portNo;
+    int portNo = 5000;
     /**
      * @brief sockfd int identifier to communicate with ControllerNode
      */
@@ -47,15 +46,12 @@ private:
     string receiveMsg();
     json receiveJson();
     void sendMsg(string message);
-    void saveFile(json jsonMessage);
-    void recoverBlock(json jsonMessage);
-    void recoverFile(json jsonMessage);
-    void recoverFileAmount(json jsonMessage);
-    void recoverFileMetadata(json jsonMessage);
-public:
-    explicit DiskNode(int diskNum);
 
+    void sendFileController();
+
+public:
+    ceROBOT();
 };
 
 
-#endif //TECFS_DISK_DISKNODE_H
+#endif //CEROBOT_CEROBOT_H
