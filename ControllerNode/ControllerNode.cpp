@@ -2,7 +2,7 @@
 
 ControllerNode::ControllerNode()
 {
-    // storeFile("as", "hola mundo\nhi");
+    storeFile("as", "hola mundo\nhi");
     serverSetup();
 }
 
@@ -190,11 +190,89 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
 
     // stringDivs.print();
 
-    // Pasar a huffman
+    // Pasar a huffman TODO
 
     // Saber dónde va la paridad
 
+    // mapa
+    //  0  1  2  3   4
+    // [A1 A2 A3 A4 Ap] 0
+    // [B1 B2 B3 Bp B4] 1
+    // [C1 C2 Cp C3 C4] 2
+    // [D1 Dp D2 D3 D4] 3
+    // [Ep E1 E2 E3 E4] 4
+    // equation to determine p disk: 4 - block#
+
+    // Pedir cantidad de archivos
+    sendMsg(clientSocket[0], json({{"case", FILE_AMOUNT}}).dump());
+    json amountResult = json::parse(receiveMsg(clientSocket[0]));
+
+    int fileAmount = amountResult["amount"].get<int>(); // TODO: change to actual name of entry
+
     // Revisar si va a haber overflow y si sí, mix n' match los strings
+    sendMsg(clientSocket[0], json({{"case", METADATA_FROM_NUM}, {"num", fileAmount}}).dump());
+    json metadataResult = json::parse(receiveMsg(clientSocket[0]));
+
+    int lastFileSize = metadataResult["file size"].get<int>();
+    int firstAvailableBit = metadataResult["start bit"].get<int>() + lastFileSize; // TODO: change to actual names of entries
+
+    int starterBlock = (int)firstAvailableBit / 512;
+    // int overflowBlocks = (int)((firstAvailableBit + lastFileSize) / 512) - starterBlock;
+
+    int bitsRemainingInBlock = 512 - (firstAvailableBit % 512);
+    int bitsRemainingForFile = lengthFourth;
+    int currentBlock = starterBlock;
+    List<std::string> finalStrings = {"", "", "", "", ""};
+
+    while (bitsRemainingForFile > bitsRemainingInBlock)
+    {
+        int parityDisk = 4 - currentBlock;
+        for (int disk = 0; disk < 5; disk++)
+        {
+            int listIndex;
+            if (disk == parityDisk)
+            {
+                listIndex = 4;
+            }
+            else if (disk < parityDisk)
+            {
+                listIndex = disk;
+            }
+            else if (disk > parityDisk)
+            {
+                listIndex = disk - 1;
+            }
+            finalStrings[disk].append(stringDivs[listIndex].substr(lengthFourth - bitsRemainingForFile, bitsRemainingInBlock));
+        }
+        bitsRemainingForFile -= bitsRemainingInBlock;
+        currentBlock++;
+        bitsRemainingInBlock = 512;
+    }
+
+    // manejar el error de que se salga de la cantidad de memoria máxima, revisando si currentBlock se sale del rango
+    if (currentBlock > 4)
+    {
+        std::cout << "ERROR: archivo intentando ser guardado excede la memoria máxima disponible en el sistema";
+    }
+
+    int parityDisk = 4 - currentBlock;
+    for (int disk = 0; disk < 5; disk++)
+    {
+        int listIndex;
+        if (disk == parityDisk)
+        {
+            listIndex = 4;
+        }
+        else if (disk < parityDisk)
+        {
+            listIndex = disk;
+        }
+        else if (disk > parityDisk)
+        {
+            listIndex = disk - 1;
+        }
+        finalStrings[disk].append(stringDivs[listIndex].substr(lengthFourth - bitsRemainingForFile, bitsRemainingForFile));
+    }
 
     // mandar request final a los discos
 }
