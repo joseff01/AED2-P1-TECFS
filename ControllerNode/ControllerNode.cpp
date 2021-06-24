@@ -2,6 +2,7 @@
 
 ControllerNode::ControllerNode()
 {
+    // storeFile("as", "hola mundo\nhi");
     serverSetup();
 }
 
@@ -162,6 +163,40 @@ void ControllerNode::sendMsg(int sendSockfd, std::string Msg)
 
 void ControllerNode::storeFile(std::string fileName, std::string fileContents)
 {
+    // Convert contents to binary
+    std::string binContents = letters2bin(fileContents);
+
+    List<std::string> stringDivs;
+
+    // Dividir en 4
+    int lengthFourth = binContents.length() / 4;
+    for (int i = 0; i < 4; i++)
+    {
+        stringDivs.push_back(binContents.substr(i * lengthFourth, lengthFourth));
+    }
+
+    // Calcular string de paridad
+    std::string parityStr;
+    for (int i = 0; i < lengthFourth; i++)
+    {
+        int p = 0;
+        for (int j = 0; j < 4; j++)
+        {
+            p = p ^ (stringDivs[j][i] - '0');
+        }
+        parityStr.append(std::to_string(p));
+    }
+    stringDivs.push_back(parityStr);
+
+    // stringDivs.print();
+
+    // Pasar a huffman
+
+    // Saber dónde va la paridad
+
+    // Revisar si va a haber overflow y si sí, mix n' match los strings
+
+    // mandar request final a los discos
 }
 
 std::string ControllerNode::letters2bin(std::string str)

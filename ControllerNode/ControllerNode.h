@@ -15,6 +15,7 @@
 #include <bitset>
 
 #include "../lib/RequestConstants.h"
+#include "../lib/List.h"
 
 class ControllerNode
 {
