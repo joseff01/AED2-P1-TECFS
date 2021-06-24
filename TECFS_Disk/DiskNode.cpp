@@ -79,12 +79,15 @@ DiskNode::DiskNode(int diskNum) {
             }
         }
     }
+     */
     //TESTS REMOVE LATER
-    //json jsonExample;
+    json jsonExample;
     //saveFile(jsonExample);
+    //recoverFileAmount(jsonExample);
     //recoverFile(jsonExample);
-    //receiveMsg();
-    */
+    recoverFileMetadata(jsonExample);
+    receiveMsg();
+
 }
 
 void DiskNode::clientSetup() {
@@ -154,7 +157,6 @@ void DiskNode::sendMsg(string stringMsg) {
 
 void DiskNode::saveFile(json jsonMessage) {
     //string encodedData = jsonMessage["Data"];
-    int fileNumber = 2; // CHANGE LATER
     //int fileNumber = jsonMessage["File"];
     /*
      *
@@ -162,7 +164,8 @@ void DiskNode::saveFile(json jsonMessage) {
      *
      *
      */
-        string decodedData = "SecondMessage"; //CHANGE LATER
+    string decodedData = "forthMessage"; //CHANGE LATER
+    string fileName = "pichulafelizcuatro"; //CHANGE LATER
     int decodedDataLen = decodedData.length();
     ifstream iMetadataFile;
     string metadataPath = libPath;
@@ -183,18 +186,22 @@ void DiskNode::saveFile(json jsonMessage) {
             noMetadataFlag = true;
         } else{
             //metadata is not empty, get bit position and length of last message
-            iMetadataFile.seekg(-13, ios::end);
-            char cBuffer[4];
-            iMetadataFile.get(cBuffer, 5);
-            string sStartBit = string(cBuffer);
+            iMetadataFile.seekg(0, ios::beg);
+            string lineFile;
+            while (getline(iMetadataFile,lineFile)){}
+
+            string sStartBit = lineFile.substr(13,4);
             cout << "StartBit: " << sStartBit << endl;
             metadata.setStartBit(stoi(sStartBit));
 
-            iMetadataFile.seekg(-4, ios::end);
-            iMetadataFile.get(cBuffer, 5);
-            string sFileLength = string (cBuffer);
+            string sFileLength = lineFile.substr(22,4);
             metadata.setFileLength(stoi(sFileLength));
             cout << "FileLength: " << metadata.getFileLength() << endl;
+
+            string sFileNum = lineFile.substr(5,4);
+            metadata.setFileNum(stoi(sFileNum));
+            cout << "FileNum: " << metadata.getFileNum() << endl;
+            metadata.setFileNum(metadata.getFileNum()+1);
         }
         iMetadataFile.close();
         int blockNum = ((metadata.getStartBit()+metadata.getFileLength())/512)+1;
@@ -272,10 +279,10 @@ void DiskNode::saveFile(json jsonMessage) {
         } else{
             newMetadataLine = "\nfile:";
         }
-        string sFileNumber = to_string(fileNumber);
+        string sFileNumber = to_string(metadata.getFileNum());
         int amountZeroes = 4;
         for (int i = 10; i < 1000; i = i*10) {
-            if (fileNumber/i > 0){
+            if (metadata.getFileNum()/i > 0){
                 amountZeroes--;
             } else {
                 amountZeroes--;
@@ -320,9 +327,14 @@ void DiskNode::saveFile(json jsonMessage) {
             sLengthFile.insert(0, amountZeroes ,'0');
         }
         newMetadataLine.append(sLengthFile);
+
+        string sFileName = " fileName:";
+        sFileName.append(fileName);
+        newMetadataLine.append(sFileName);
         cout << newMetadataLine << endl;
-        //Add metadata to metadata file
+        //Add filename to metadata file
         oMetadataFile << newMetadataLine;
+
         /*
          *
          *
@@ -506,6 +518,119 @@ void DiskNode::recoverFile(json jsonMessage) {
             dataBlock.setDataString(dataBlock.getDataString() + dataBlockOverflow.getDataString());
         }
         cout << dataBlock.getDataString() << endl;
+        /*
+          *
+          *
+          *
+          *
+          *
+          * HUFFMAN ENCODING AND SEND MESSAGE
+          * JSON Message to send to controller node PENDING
+          *
+          *
+          *
+          *
+          */
+    } else{
+        perror("ERROR unable to read METADATA.txt");
+        exit(1);
+    }
+}
+
+void DiskNode::recoverFileAmount(json jsonMessage) {
+    /*
+    *
+    * HUFFMAN DECODING+
+    *
+    *
+    */
+
+    int numberFiles = 0;
+
+    ifstream iMetadataFile;
+    string metadataPath = libPath;
+    metadataPath.append("/METADATA.txt");
+    cout << metadataPath << endl;
+
+    iMetadataFile.open(metadataPath);
+    if (iMetadataFile.is_open()) {
+        iMetadataFile.seekg(0, ios::beg);
+        string lineFile;
+        while (getline(iMetadataFile,lineFile)){
+            numberFiles++;
+        }
+        cout << numberFiles << endl;
+        /*
+         *
+         *
+         * SEND numberFiles to controller node
+         *
+         *
+         */
+    } else {
+        perror("ERROR unable to read METADATA.txt");
+        exit(1);
+    }
+
+}
+
+void DiskNode::recoverFileMetadata(json jsonMessage) {
+    /*
+     *
+     * HUFFMAN DECODING+
+     *
+     *
+     */
+    int fileNum = 2; //Change Later
+
+    ifstream iMetadataFile;
+    string metadataPath = libPath;
+    metadataPath.append("/METADATA.txt");
+    cout << metadataPath << endl;
+
+    //Setting relevant metadata
+    Metadata metadata(0,0,metadataPath);
+
+    iMetadataFile.open(metadata.getFilePath());
+    if (iMetadataFile.is_open()) {
+        iMetadataFile.seekg(0, ios::end);
+        if (iMetadataFile.tellg() == 0) {
+
+
+
+
+
+            //MESSAGE ERROR TO CONTROLLER NODE PENDING!!!!!!!!!
+
+
+
+
+
+            return;
+        }
+        iMetadataFile.seekg(0, ios::beg);
+        string lineFile;
+        while (getline(iMetadataFile,lineFile)){
+            if(lineFile.length() == 0){
+                continue;
+            }
+            cout << lineFile << endl;
+            int currentFileNumber = stoi(lineFile.substr(5,4));
+            cout << currentFileNumber << endl;
+            if (currentFileNumber == fileNum) {
+                cout << "File Found!" << endl;
+                break;
+            }
+        }
+        int startBit = stoi(lineFile.substr(13,4));
+        int fileLength = stoi(lineFile.substr(22,4));
+        string fileName = lineFile.substr(36,string::npos);
+        cout << "StartBit: " << startBit << endl;
+        cout << "FileLength: " << fileLength << endl;
+        cout << "FileName: " << fileName << endl;
+        iMetadataFile.close();
+
+
         /*
           *
           *

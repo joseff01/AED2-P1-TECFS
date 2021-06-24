@@ -30,3 +30,11 @@ void Metadata::setFilePath(const string &filePath) {
     Metadata::filePath = filePath;
 }
 
+int Metadata::getFileNum() const {
+    return fileNum;
+}
+
+void Metadata::setFileNum(int fileNum) {
+    Metadata::fileNum = fileNum;
+}
+

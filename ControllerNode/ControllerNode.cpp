@@ -136,3 +136,10 @@ string ControllerNode::receiveMsg(int receiveSockfd) {
     string receivedMsg = string(buffer);
     return receivedMsg;
 }
+
+void ControllerNode::sendMsg(int sendSockfd, string Msg) {
+    if( send(sendSockfd, Msg.c_str(), strlen(Msg.c_str()), 0) != strlen(Msg.c_str()) )
+    {
+        perror("send");
+    }
+}

@@ -23,7 +23,7 @@ private:
     char buffer[1025];
     void serverSetup();
     string receiveMsg(int receiveSockfd);
-    void sendMsg(string Msg);
+    void sendMsg(int sendSockfd, string Msg);
 public:
     ControllerNode();
 };

@@ -34,6 +34,8 @@ private:
     void saveFile(json jsonMessage);
     void recoverBlock(json jsonMessage);
     void recoverFile(json jsonMessage);
+    void recoverFileAmount(json jsonMessage);
+    void recoverFileMetadata(json jsonMessage);
 public:
     explicit DiskNode(int diskNum);
 
