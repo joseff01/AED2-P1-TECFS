@@ -110,21 +110,10 @@ void ceROBOT::sendFileController() {
             cout << fileContents;
             json fileJson;
             fileJson["case"] = CEROBOT_REQUEST;
-            /*
-             *
-             *
-             * HUFFMAN ENCODING OF FILENAME AND CONTENTS
-             *
-             *
-             */
-            //fileJson["fileName"] = encodedFileName;
-            //fileJson["fileContents"] = encodedFileContents;
-            /*
-             *
-             * SEND MESSAGE TO CONTROLLER NODE
-             *
-             *
-             */
+            fileJson["fileName"] = fileName;
+            fileJson["fileContents"] = fileContents;
+            string jsonSend = fileJson.dump();
+            sendMsg(jsonSend);
         }
     }
 }

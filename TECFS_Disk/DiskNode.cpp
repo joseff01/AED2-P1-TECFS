@@ -75,10 +75,6 @@ DiskNode::DiskNode(int diskNum) {
                 saveFile(jsonMessage);
                 break;
             }
-            case WHOLE_BLOCK:{
-                recoverBlock(jsonMessage);
-                break;
-            }
             case FILE_FROM_NUM:{
                 recoverFile(jsonMessage);
                 break;
@@ -182,15 +178,8 @@ void DiskNode::sendMsg(string stringMsg) {
  * Huffman code
  */
 void DiskNode::saveFile(json jsonMessage) {
-    //string encodedData = jsonMessage["Data"];
-    /*
-     *
-     * HUFFMAN DECODING
-     *
-     *
-     */
-    string decodedData = "forthMessage"; //CHANGE LATER
-    string fileName = "testFile"; //CHANGE LATER
+    string decodedData = jsonMessage["Contents"];
+    string fileName = jsonMessage["Name"];
     int decodedDataLen = decodedData.length();
     ifstream iMetadataFile;
     string metadataPath = libPath;
@@ -360,38 +349,15 @@ void DiskNode::saveFile(json jsonMessage) {
         //Add filename to metadata file
         oMetadataFile << newMetadataLine;
 
-        /*
-         *
-         *
-         *
-         *
-         *
-         * HUFFMAN ENCODING AND SEND MESSAGE
-         * JSON Message to send to controller node PENDING
-         *
-         *
-         *
-         *
-         */
-
     } else{
         perror("ERROR unable to read METADATA.txt");
         exit(1);
     }
 }
 
-/**
- * @brief DiskNode::recoverBlock Sends to ControllerNode the indicated block of data.
- * @param jsonMessage json object of the message received from Controller node. It contains the number of the requested block, encrypted with
- * Huffman code
- */
+/*
 void DiskNode::recoverBlock(json jsonMessage) {
-    /*
-     *
-     * HUFFMAN DECODING+
-     *
-     *
-     */
+
 
     int blockNum = 1; //Change Later
 
@@ -417,7 +383,7 @@ void DiskNode::recoverBlock(json jsonMessage) {
         perror("ERROR unable to read Block text file");
         exit(1);
     }
-    /*
+
          *
          *
          *
@@ -429,8 +395,9 @@ void DiskNode::recoverBlock(json jsonMessage) {
          *
          *
          *
-         */
+
 }
+*/
 
 /**
  * @brief DiskNode::recoverFile Sends to ControllerNode the indicated file of data.
@@ -438,13 +405,7 @@ void DiskNode::recoverBlock(json jsonMessage) {
  * Huffman code.
  */
 void DiskNode::recoverFile(json jsonMessage) {
-    /*
-     *
-     * HUFFMAN DECODING+
-     *
-     *
-     */
-    int fileNum = 1; //Change Later
+    int fileNum = jsonMessage["Num"];
 
     ifstream iMetadataFile;
     string metadataPath = libPath;
@@ -456,21 +417,6 @@ void DiskNode::recoverFile(json jsonMessage) {
 
     iMetadataFile.open(metadata.getFilePath());
     if (iMetadataFile.is_open()) {
-        iMetadataFile.seekg(0, ios::end);
-        if (iMetadataFile.tellg() == 0) {
-
-
-
-
-
-            //MESSAGE ERROR TO CONTROLLER NODE PENDING!!!!!!!!!
-
-
-
-
-
-            return;
-        }
         iMetadataFile.seekg(0, ios::beg);
         string lineFile;
         while (getline(iMetadataFile,lineFile)){
@@ -515,6 +461,7 @@ void DiskNode::recoverFile(json jsonMessage) {
         //Getting values at the block file
         ifstream iBlockFile(dataBlock.getFilePath());
         if (iBlockFile.is_open()){
+            jsonMessage["IfExists"] = true;
             string fileData;
             getline(iBlockFile,fileData);
             cout << fileData << endl;
@@ -525,8 +472,7 @@ void DiskNode::recoverFile(json jsonMessage) {
             }
             cout << dataBlock.getDataString() << endl;
         } else {
-            perror("ERROR unable to read Block text file");
-            exit(1);
+            jsonMessage["IfExists"] = false;
         }
         // If message overflows, get second part of file
         if (overflowFlag){
@@ -541,31 +487,23 @@ void DiskNode::recoverFile(json jsonMessage) {
             DataBlock dataBlockOverflow("",blockPathOverflow);
             ifstream iBlockFileOverflow(dataBlockOverflow.getFilePath());
             if (iBlockFileOverflow.is_open()){
+                jsonMessage["IfExists"] = true;
                 string fileData;
                 getline(iBlockFileOverflow,fileData);
                 cout << fileData << endl;
                 dataBlockOverflow.setDataString(fileData.substr(0,(metadata.getStartBit()+metadata.getFileLength())%512));
                 cout << dataBlockOverflow.getDataString() << endl;
             } else {
-                perror("ERROR unable to read Overflow Block text file");
-                exit(1);
+                jsonMessage["IfExists"] = false;
             }
             dataBlock.setDataString(dataBlock.getDataString() + dataBlockOverflow.getDataString());
         }
         cout << dataBlock.getDataString() << endl;
-        /*
-          *
-          *
-          *
-          *
-          *
-          * HUFFMAN ENCODING AND SEND MESSAGE
-          * JSON Message to send to controller node PENDING
-          *
-          *
-          *
-          *
-          */
+        jsonMessage["Contents"] = dataBlock.getDataString();
+
+        string jsonSend = jsonMessage.dump();
+        sendMsg(jsonSend);
+
     } else{
         perror("ERROR unable to read METADATA.txt");
         exit(1);
@@ -577,15 +515,7 @@ void DiskNode::recoverFile(json jsonMessage) {
  * @param jsonMessage json object of the message received from Controller node.
  */
 void DiskNode::recoverFileAmount(json jsonMessage) {
-    /*
-    *
-    * HUFFMAN DECODING+
-    *
-    *
-    */
-
     int numberFiles = 0;
-
     ifstream iMetadataFile;
     string metadataPath = libPath;
     metadataPath.append("/METADATA.txt");
@@ -599,13 +529,11 @@ void DiskNode::recoverFileAmount(json jsonMessage) {
             numberFiles++;
         }
         cout << numberFiles << endl;
-        /*
-         *
-         *
-         * SEND numberFiles to controller node
-         *
-         *
-         */
+
+        jsonMessage["Amount"] = numberFiles;
+
+        string jsonSend = jsonMessage.dump();
+        sendMsg(jsonSend);
     } else {
         perror("ERROR unable to read METADATA.txt");
         exit(1);
@@ -618,13 +546,7 @@ void DiskNode::recoverFileAmount(json jsonMessage) {
  * @param jsonMessage json object of the message received from Controller node. Contains the number of the file to return the metadata of.
  */
 void DiskNode::recoverFileMetadata(json jsonMessage) {
-    /*
-     *
-     * HUFFMAN DECODING+
-     *
-     *
-     */
-    int fileNum = 2; //Change Later
+    int fileNum = jsonMessage["Num"];
 
     ifstream iMetadataFile;
     string metadataPath = libPath;
@@ -636,21 +558,6 @@ void DiskNode::recoverFileMetadata(json jsonMessage) {
 
     iMetadataFile.open(metadata.getFilePath());
     if (iMetadataFile.is_open()) {
-        iMetadataFile.seekg(0, ios::end);
-        if (iMetadataFile.tellg() == 0) {
-
-
-
-
-
-            //MESSAGE ERROR TO CONTROLLER NODE PENDING!!!!!!!!!
-
-
-
-
-
-            return;
-        }
         iMetadataFile.seekg(0, ios::beg);
         string lineFile;
         while (getline(iMetadataFile,lineFile)){
@@ -673,20 +580,13 @@ void DiskNode::recoverFileMetadata(json jsonMessage) {
         cout << "FileName: " << fileName << endl;
         iMetadataFile.close();
 
+        jsonMessage["Start bit"] = startBit;
+        jsonMessage["File length"] = fileLength;
+        jsonMessage["Name"] = fileName;
 
-        /*
-          *
-          *
-          *
-          *
-          *
-          * HUFFMAN ENCODING AND SEND MESSAGE
-          * JSON Message to send to controller node PENDING
-          *
-          *
-          *
-          *
-          */
+        string jsonSend = jsonMessage.dump();
+        sendMsg(jsonSend);
+
     } else{
         perror("ERROR unable to read METADATA.txt");
         exit(1);
