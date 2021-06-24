@@ -1,6 +1,7 @@
 #include <iostream>
 #include "DiskNode.h"
 #include "../lib/tinyxml2.h"
+#include "../lib/Huffman.h"
 
 using namespace std;
 using namespace tinyxml2;
@@ -21,6 +22,7 @@ int main() {
         }
     }
     DiskNode diskNode(diskNum);
+     
 
 }
 
