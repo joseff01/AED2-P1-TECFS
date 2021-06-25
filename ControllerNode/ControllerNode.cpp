@@ -1,5 +1,6 @@
 #include "ControllerNode.h"
 #include <stdexcept>
+#include <thread>
 
 ControllerNode::ControllerNode()
 {
@@ -51,7 +52,7 @@ void ControllerNode::serverSetup()
     std::cout << "Waiting for DiskNodes..." << std::endl;
 
     int connectionCounter = 0;
-    while (connectionCounter < 6)
+    while (connectionCounter < 7)
     {
         FD_ZERO(&readfds);
         FD_SET(sockfd, &readfds);
@@ -142,16 +143,19 @@ void ControllerNode::serverSetup()
     // storeFile("vara", "hola, este es un libro muy bonito sobre una vara muy buena!");
     // storeFile("vara2", "hola, esta es la secuela al mejor libro de sus vidas. Este es mucho más largo porque ocupo un ejemplo "
     //                     "que se bien estúpidamente largo. Aunque ocupo parar para no llenar el disco completamente.");
-    // std::cout << "\nBÚSQUEDAS:\n"
-    //           << searchFiles("BLOCK") << "\n\n";
+    std::cout << "\nBÚSQUEDAS:\n"
+              << searchFiles("BLOCK") << "\n\n";
     // std::cout << searchFiles("2") << std::endl;
     // std::cout << retrieveFile("BLOCK1.txt") << std::endl;
     // std::cout << retrieveFile("BLOCK2.txt") << std::endl;
     // std::cout << retrieveFile("BLOCK3.txt") << std::endl;
     // std::cout << retrieveFile("BLOCK4.txt") << std::endl;
 
-    //RequestLoop
-    bool closeFlag = false;
+    //ceSearch loop
+    std::thread ceSearchThread(&ControllerNode::ceSearchLoop, this);
+
+    //ceRobot loop
+    bool closeFlag = true;
     while (closeFlag)
     {
         json jsonMessage = json::parse(receiveMsg(clientSocket[5]));
@@ -166,6 +170,39 @@ void ControllerNode::serverSetup()
         {
             storeFile(jsonMessage["FileName"].get<std::string>(), jsonMessage["FileContents"].get<std::string>());
             sendMsg(clientSocket[5], jsonMessage.dump());
+            break;
+        }
+        }
+    }
+
+    ceSearchThread.join();
+}
+
+void ControllerNode::ceSearchLoop()
+{
+    bool closeFlag = true;
+    while (closeFlag)
+    {
+        json jsonMessage = json::parse(receiveMsg(clientSocket[6]));
+        switch ((int)jsonMessage["Case"])
+        {
+        case CLOSE:
+        {
+            closeFlag = false;
+            break;
+        }
+        case CESEARCH_LOOKUP_STR:
+        {
+            List<std::string> foundFiles = searchFiles(jsonMessage["FileName"].get<std::string>());
+            json returnJson = {{"NamesList", foundFiles}};
+            sendMsg(clientSocket[6], returnJson.dump());
+            break;
+        }
+        case CESEARCH_GET_FILE:
+        {
+            std::string fileString = retrieveFile(jsonMessage["FileName"].get<std::string>());
+            json returnJson = {{"Contents", fileString}};
+            sendMsg(clientSocket[6], returnJson.dump());
             break;
         }
         }
@@ -411,6 +448,7 @@ List<std::string> ControllerNode::searchFiles(std::string searchString)
             foundNames.push_back(fileName);
         }
     }
+    std::cout << "Archivos encontrados: " << foundNames << std::endl;
     return foundNames;
 }
 

@@ -3,9 +3,9 @@
 #include "../lib/List.h"
 
 ceSEARCH_GUI::ceSEARCH_GUI(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::ceSEARCH_GUI)
+    : QMainWindow(parent), ui(new Ui::ceSEARCH_GUI)
 {
+    clientSetup();
     ui->setupUi(this);
 }
 
@@ -14,7 +14,6 @@ ceSEARCH_GUI::~ceSEARCH_GUI()
     delete ui;
 }
 
-
 void ceSEARCH_GUI::on_pushButton_clicked()
 {
     ui->listWidget->clear();
@@ -22,30 +21,26 @@ void ceSEARCH_GUI::on_pushButton_clicked()
     std::string str = ui->searchBar->text().toStdString();
 
     json jsonMsg;
-    jsonMsg["case"] = CESEARCH_REQUEST;
-    jsonMsg["fileName"] = str;
+    jsonMsg["Case"] = CESEARCH_LOOKUP_STR;
+    jsonMsg["FileName"] = str;
 
-    string sJson = jsonMsg.dump();
-    sendMsg(sJson);
-    sJson = receiveMsg();
+    sendMsg(jsonMsg.dump());
+    json sJson = json::parse(receiveMsg());
 
     // Tomando en cuenta de que se supone que me mandan un List<string>
 
+    List<std::string> listStr = sJson["NamesList"].get<List<std::string>>(); //given list by method
 
-    List<std::string> listStr; //given list by method
-
-    for(int i = 0; i<listStr.length();i++)
+    for (int i = 0; i < listStr.length(); i++)
     {
         QString current = QString::fromStdString(listStr.at(i));
         ui->listWidget->addItem(current);
     }
-
-
 }
 
 void ceSEARCH_GUI::on_listWidget_itemClicked(QListWidgetItem *item)
 {
-    std::string str =item->text().toStdString();
+    std::string str = item->text().toStdString();
     /*
      * ENVIAR str
      * esperar a recivir
@@ -56,16 +51,16 @@ void ceSEARCH_GUI::on_listWidget_itemClicked(QListWidgetItem *item)
 
     //Asumiendo que recive un string enorme
 
-    std::string  stringTemp;
+    std::string stringTemp;
     QString qstr = QString::fromStdString(stringTemp);
     ui->plainTextEdit->setPlainText(qstr);
-
 }
 
 /**
  * @brief ceSEARCH_GUI::clientSetup Method in charge of setting up connection with ControllerNode app
  */
-void ceSEARCH_GUI::clientSetup() {
+void ceSEARCH_GUI::clientSetup()
+{
     int option = 1;
     struct sockaddr_in serv_addr;
     char const *localHost = "localhost";
@@ -101,10 +96,12 @@ void ceSEARCH_GUI::clientSetup() {
  * @brief ceSEARCH_GUI::receiveMsg Wait for a message to arrive from ControllerNode. When it arrives, it returns it
  * @return stringBuffer string of the message received from ControllerNode
  */
-string ceSEARCH_GUI::receiveMsg(){
+string ceSEARCH_GUI::receiveMsg()
+{
     memset(buffer, 0, 1025);
     int n = read(sockfd, buffer, 1025);
-    if (n < 0) {
+    if (n < 0)
+    {
         perror("ERROR reading from socket");
         exit(1);
     }
@@ -116,10 +113,12 @@ string ceSEARCH_GUI::receiveMsg(){
  * @brief ceSEARCH_GUI::receiveJson Wait for a message to arrive from ControllerNode. When it arrives, it parses it as a json object and returns it
  * @return jsonBuffer json object of the message received from ControllerNode
  */
-json ceSEARCH_GUI::receiveJson(){
+json ceSEARCH_GUI::receiveJson()
+{
     memset(buffer, 0, 1025);
     int n = read(sockfd, buffer, 1025);
-    if (n < 0) {
+    if (n < 0)
+    {
         perror("ERROR reading from socket");
         exit(1);
     }
@@ -131,7 +130,8 @@ json ceSEARCH_GUI::receiveJson(){
  * @brief ceSEARCH_GUI::sendMsg Sends a string message to ControllerNode
  * @param stringMsg Message to send to ControllerNode
  */
-void ceSEARCH_GUI::sendMsg(string stringMsg) {
+void ceSEARCH_GUI::sendMsg(string stringMsg)
+{
     memset(buffer, 0, 1025);
     strncpy(buffer, stringMsg.c_str(), 1025);
     int n = write(sockfd, buffer, strlen(buffer));

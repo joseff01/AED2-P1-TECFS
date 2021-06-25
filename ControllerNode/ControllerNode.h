@@ -41,6 +41,9 @@ private:
     List<std::string> searchFiles(std::string searchString);
     std::string retrieveFile(std::string fileName);
 
+    // ceSearch loop
+    void ceSearchLoop();
+
 public:
     ControllerNode();
 };
