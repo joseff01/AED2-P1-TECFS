@@ -8,5 +8,6 @@ const int FILE_FROM_NUM     = 3;
 const int METADATA_FROM_NUM = 4;
 const int FILE_AMOUNT       = 5;
 const int CEROBOT_REQUEST   = 6;
+const int CESEARCH_REQUEST   = 7;
 
 #endif

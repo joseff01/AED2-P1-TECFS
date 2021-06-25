@@ -15,6 +15,7 @@
 #include <QListWidgetItem>
 
 #include "../lib/json.hpp"
+#include "../lib/RequestConstants.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class ceSEARCH_GUI; }

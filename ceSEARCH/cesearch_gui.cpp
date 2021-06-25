@@ -20,13 +20,14 @@ void ceSEARCH_GUI::on_pushButton_clicked()
     ui->listWidget->clear();
     ui->plainTextEdit->clear();
     std::string str = ui->searchBar->text().toStdString();
-    /*
-     *send str to controllerNode
-     *wait for answer
-     *
-     *
-     *
-     */
+
+    json jsonMsg;
+    jsonMsg["case"] = CESEARCH_REQUEST;
+    jsonMsg["fileName"] = str;
+
+    string sJson = jsonMsg.dump();
+    sendMsg(sJson);
+    sJson = receiveMsg();
 
     // Tomando en cuenta de que se supone que me mandan un List<string>
 
