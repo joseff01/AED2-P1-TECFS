@@ -24,7 +24,8 @@ using json = nlohmann::json;
 /**
  * @brief DiskNode Object that manages completely a single disk of the Raid system
  */
-class DiskNode {
+class DiskNode
+{
 
 private:
     /**
@@ -38,7 +39,7 @@ private:
     /**
      * @brief buffer char array that's used to send and receive the data from ControllerNode
      */
-    char buffer[1025];
+    char buffer[BUFFER_SIZE];
     /**
      * @brief libPath stores the path of the directory to analize
      */
@@ -51,10 +52,9 @@ private:
     void recoverFile(json jsonMessage);
     void recoverFileAmount(json jsonMessage);
     void recoverFileMetadata(json jsonMessage);
+
 public:
     explicit DiskNode(int diskNum);
-
 };
-
 
 #endif //TECFS_DISK_DISKNODE_H

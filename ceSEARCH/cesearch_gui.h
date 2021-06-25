@@ -18,7 +18,10 @@
 #include "../lib/RequestConstants.h"
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class ceSEARCH_GUI; }
+namespace Ui
+{
+    class ceSEARCH_GUI;
+}
 QT_END_NAMESPACE
 
 using namespace std;
@@ -50,7 +53,7 @@ private:
     /**
      * @brief buffer char array that's used to send and receive the data from ControllerNode
      */
-    char buffer[1025];
+    char buffer[BUFFER_SIZE];
     /**
      * @brief libPath stores the path of the directory to analize
      */

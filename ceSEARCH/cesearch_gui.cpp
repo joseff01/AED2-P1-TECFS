@@ -1,6 +1,7 @@
 #include "cesearch_gui.h"
 #include "ui_cesearch_gui.h"
 #include "../lib/List.h"
+#include "../lib/Huffman.h"
 
 ceSEARCH_GUI::ceSEARCH_GUI(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::ceSEARCH_GUI)
@@ -105,15 +106,40 @@ void ceSEARCH_GUI::clientSetup()
  */
 string ceSEARCH_GUI::receiveMsg()
 {
-    memset(buffer, 0, 1025);
-    int n = read(sockfd, buffer, 1025);
+    memset(buffer, 0, BUFFER_SIZE);
+    int n = read(sockfd, buffer, BUFFER_SIZE);
     if (n < 0)
     {
         perror("ERROR reading from socket");
         exit(1);
     }
-    string stringBuffer(buffer);
-    return stringBuffer;
+    std::string receivedMsg;
+    if (n == 0)
+    {
+        std::cout << "Received empty string\n";
+        receivedMsg = json({{"Case", CLOSE}}).dump();
+    }
+    else
+    {
+        std::string encodedMsg = std::string(buffer);
+        memset(buffer, 0, BUFFER_SIZE);
+        int n = read(sockfd, buffer, BUFFER_SIZE);
+        if (n == 0)
+        {
+            std::cout << "Received empty string\n";
+            receivedMsg = json({{"Case", CLOSE}}).dump();
+            return receivedMsg;
+        }
+
+        json treeJSON = json::parse(buffer);
+        string x = "";
+        string *deco = &x;
+        LeafNode tree = treeJSON.get<LeafNode>();
+        Huffman::decode(&tree, encodedMsg, deco);
+        receivedMsg = *deco;
+    }
+    std::cout << "Message received: " << receivedMsg << std::endl;
+    return receivedMsg;
 }
 
 /**
@@ -122,14 +148,39 @@ string ceSEARCH_GUI::receiveMsg()
  */
 json ceSEARCH_GUI::receiveJson()
 {
-    memset(buffer, 0, 1025);
-    int n = read(sockfd, buffer, 1025);
+    memset(buffer, 0, BUFFER_SIZE);
+    int n = read(sockfd, buffer, BUFFER_SIZE);
     if (n < 0)
     {
         perror("ERROR reading from socket");
         exit(1);
     }
-    json jsonBuffer = json::parse(buffer);
+    json jsonBuffer;
+    if (n == 0)
+    {
+        std::cout << "Received empty string\n";
+        jsonBuffer = json({{"Case", CLOSE}});
+    }
+    else
+    {
+        std::string encodedMsg = std::string(buffer);
+        memset(buffer, 0, BUFFER_SIZE);
+        int n = read(sockfd, buffer, BUFFER_SIZE);
+        if (n == 0)
+        {
+            std::cout << "Received empty string\n";
+            jsonBuffer = json({{"Case", CLOSE}});
+            return jsonBuffer;
+        }
+
+        json treeJSON = json::parse(buffer);
+        string x = "";
+        string *deco = &x;
+        LeafNode tree = treeJSON.get<LeafNode>();
+        Huffman::decode(&tree, encodedMsg, deco);
+        jsonBuffer = json::parse(*deco);
+    }
+    cout << "Received JSON: " << jsonBuffer.dump() << endl;
     return jsonBuffer;
 }
 
@@ -139,12 +190,19 @@ json ceSEARCH_GUI::receiveJson()
  */
 void ceSEARCH_GUI::sendMsg(string stringMsg)
 {
-    memset(buffer, 0, 1025);
-    strncpy(buffer, stringMsg.c_str(), 1025);
-    int n = write(sockfd, buffer, strlen(buffer));
-    if (n < 0)
+    Huffman huff(stringMsg);
+    LeafNode *root = huff.getDecodeTree();
+    std::string encodedMsg = huff.getEncodedMsg();
+    json j = *root;
+    std::string treeMsg = j.dump();
+
+    if (send(sockfd, encodedMsg.c_str(), strlen(encodedMsg.c_str()), 0) != strlen(encodedMsg.c_str()))
     {
-        perror("ERROR writing to socket");
-        exit(1);
+        perror("send");
+    }
+    sleep(0.4);
+    if (send(sockfd, treeMsg.c_str(), strlen(treeMsg.c_str()), 0) != strlen(treeMsg.c_str()))
+    {
+        perror("send");
     }
 }

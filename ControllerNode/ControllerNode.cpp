@@ -1,6 +1,7 @@
 #include "ControllerNode.h"
 #include <stdexcept>
 #include <thread>
+#include "../lib/Huffman.h"
 
 ControllerNode::ControllerNode()
 {
@@ -90,10 +91,7 @@ void ControllerNode::serverSetup()
 
         printf("New connection , socket fd is %d , ip is : %s , port : %d \n", newsockfd, inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
 
-        if (send(newsockfd, "Server Message Received. Connection established!", strlen("Server Message Received. Connection established!"), 0) != strlen("Server Message Received. Connection established!"))
-        {
-            perror("send");
-        }
+        sendMsg(newsockfd, "Server Message Received. Connection established!");
 
         puts("Welcome message sent successfully");
 
@@ -134,7 +132,7 @@ void ControllerNode::serverSetup()
                 {
                     //set the string terminating NULL byte on the end of the data read
                     buffer[valread] = '\0';
-                    send(socketDescriptor, buffer, strlen(buffer), 0);
+                    sendMsg(socketDescriptor, std::string(buffer));
                 }
             }
         }
@@ -212,8 +210,9 @@ void ControllerNode::ceSearchLoop()
 std::string ControllerNode::receiveMsg(int receiveSockfd)
 {
     // TODO: agregar huffman decoding y recibir 2 mensajes, el segundo tiene la info para descomprimir
-    memset(buffer, 0, 1025);
-    int n = read(receiveSockfd, buffer, 1025);
+
+    memset(buffer, 0, BUFFER_SIZE);
+    int n = read(receiveSockfd, buffer, BUFFER_SIZE);
     if (n < 0)
     {
         perror("ERROR reading from socket");
@@ -228,7 +227,22 @@ std::string ControllerNode::receiveMsg(int receiveSockfd)
     }
     else
     {
-        receivedMsg = std::string(buffer);
+        std::string encodedMsg = std::string(buffer);
+        memset(buffer, 0, BUFFER_SIZE);
+        int n = read(receiveSockfd, buffer, BUFFER_SIZE);
+        if (n == 0)
+        {
+            std::cout << "Received empty string\n";
+            receivedMsg = json({{"Case", CLOSE}}).dump();
+            return receivedMsg;
+        }
+
+        json treeJSON = json::parse(buffer);
+        string x = "";
+        string *deco = &x;
+        LeafNode tree = treeJSON.get<LeafNode>();
+        Huffman::decode(&tree, encodedMsg, deco);
+        receivedMsg = *deco;
     }
     std::cout << "Message received: " << receivedMsg << std::endl;
     return receivedMsg;
@@ -236,8 +250,19 @@ std::string ControllerNode::receiveMsg(int receiveSockfd)
 
 void ControllerNode::sendMsg(int sendSockfd, std::string Msg)
 {
-    // TODO: agregar huffman encoding y enviar 2 mensajes, el segundo tiene la info para descomprimir
-    if (send(sendSockfd, Msg.c_str(), strlen(Msg.c_str()), 0) != strlen(Msg.c_str()))
+    Huffman huff(Msg);
+    LeafNode *root = huff.getDecodeTree();
+    std::string encodedMsg = huff.getEncodedMsg();
+    json j = *root;
+    std::string treeMsg = j.dump();
+
+    sleep(0.4);
+    if (send(sendSockfd, encodedMsg.c_str(), strlen(encodedMsg.c_str()), 0) != strlen(encodedMsg.c_str()))
+    {
+        perror("send");
+    }
+    sleep(0.4);
+    if (send(sendSockfd, treeMsg.c_str(), strlen(treeMsg.c_str()), 0) != strlen(treeMsg.c_str()))
     {
         perror("send");
     }
@@ -257,12 +282,12 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
         stringDivs.push_back(binContents.substr(i * lengthFourth, lengthFourth));
     }
 
-    if (lengthFourth > 512)
-    {
-        std::cout << "Error: file should be less than 64 characters long";
-        return;
-        throw std::overflow_error("File size too big");
-    }
+    // if (lengthFourth > 512)
+    // {
+    //     std::cout << "Error: file should be less than 64 characters long";
+    //     return;
+    //     throw std::overflow_error("File size too big");
+    // }
 
     // Calcular string de paridad
     std::string parityStr;

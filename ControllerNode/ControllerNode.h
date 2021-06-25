@@ -25,7 +25,7 @@ private:
     // 0-4 disknodes, 5 ceSearch, 6 ceRobot
     int clientSocket[7];
     fd_set readfds;
-    char buffer[1025];
+    char buffer[BUFFER_SIZE];
     void serverSetup();
     std::string receiveMsg(int receiveSockfd);
     void sendMsg(int sendSockfd, std::string Msg);
