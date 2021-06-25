@@ -138,12 +138,14 @@ void ControllerNode::serverSetup()
             }
         }
     }
-    // storeFile("pinga", "hola, este es un libro muy bonito sobre una pinga muy buena!");
-    // // storeFile("pinga2", "hola, esta es la secuela al mejor libro de sus vidas.");
+    ////// Testing
+    // storeFile("vara", "hola, este es un libro muy bonito sobre una vara muy buena!");
+    // storeFile("vara2", "hola, esta es la secuela al mejor libro de sus vidas. Este es mucho más largo porque ocupo un ejemplo "
+    //                     "que se bien estúpidamente largo. Aunque ocupo parar para no llenar el disco completamente.");
     // std::cout << "\nBÚSQUEDAS:\n"
-    //           << searchFiles("pinga") << "\n\n";
+    //           << searchFiles("vara") << "\n\n";
     // std::cout << searchFiles("2") << std::endl;
-    // std::cout << retrieveFile("pinga") << std::endl;
+    // std::cout << retrieveFile("vara2") << std::endl;
 }
 
 std::string ControllerNode::receiveMsg(int receiveSockfd)

@@ -153,7 +153,17 @@ json DiskNode::receiveJson(){
         perror("ERROR reading from socket");
         exit(1);
     }
-    json jsonBuffer = json::parse(buffer);
+    json jsonBuffer;
+    if (n == 0)
+    {
+        cout << "Received empty string\n";
+        jsonBuffer = {{"Case", CLOSE}};
+    }
+    else
+    {
+        jsonBuffer = json::parse(buffer);
+    }
+    cout << "Received JSON: " << jsonBuffer.dump() << endl;
     return jsonBuffer;
 }
 
@@ -461,7 +471,7 @@ void DiskNode::recoverFile(json jsonMessage) {
         jsonMessage["Contents"] = dataBlock.getDataString();
 
         string jsonSend = jsonMessage.dump();
-        //sendMsg(jsonSend);
+        sendMsg(jsonSend);
 
     } else{
         perror("ERROR unable to read METADATA.txt");
@@ -533,7 +543,7 @@ void DiskNode::recoverFileMetadata(json jsonMessage) {
         }
         int startBit = stoi(lineFile.substr(13,4));
         int fileLength = stoi(lineFile.substr(22,4));
-        string fileName = lineFile.substr(37,string::npos);
+        string fileName = lineFile.substr(36,string::npos);
         cout << "StartBit: " << startBit << endl;
         cout << "FileLength: " << fileLength << endl;
         cout << "FileName: " << fileName << endl;
