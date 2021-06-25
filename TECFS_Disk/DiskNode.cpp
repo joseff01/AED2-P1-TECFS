@@ -574,7 +574,7 @@ void DiskNode::recoverFileMetadata(json jsonMessage) {
         }
         int startBit = stoi(lineFile.substr(13,4));
         int fileLength = stoi(lineFile.substr(22,4));
-        string fileName = lineFile.substr(36,string::npos);
+        string fileName = lineFile.substr(37,string::npos);
         cout << "StartBit: " << startBit << endl;
         cout << "FileLength: " << fileLength << endl;
         cout << "FileName: " << fileName << endl;

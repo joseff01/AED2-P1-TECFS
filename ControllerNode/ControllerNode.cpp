@@ -3,7 +3,6 @@
 
 ControllerNode::ControllerNode()
 {
-    storeFile("as", "hola mundo\nhi");
     serverSetup();
 }
 
@@ -139,6 +138,12 @@ void ControllerNode::serverSetup()
             }
         }
     }
+    // storeFile("pinga", "hola, este es un libro muy bonito sobre una pinga muy buena!");
+    // // storeFile("pinga2", "hola, esta es la secuela al mejor libro de sus vidas.");
+    // std::cout << "\nBÚSQUEDAS:\n"
+    //           << searchFiles("pinga") << "\n\n";
+    // std::cout << searchFiles("2") << std::endl;
+    // std::cout << retrieveFile("pinga") << std::endl;
 }
 
 std::string ControllerNode::receiveMsg(int receiveSockfd)
@@ -152,6 +157,7 @@ std::string ControllerNode::receiveMsg(int receiveSockfd)
         exit(1);
     }
     std::string receivedMsg = std::string(buffer);
+    std::cout << "Message received: " << receivedMsg << std::endl;
     return receivedMsg;
 }
 
@@ -217,14 +223,23 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
 
     int fileAmount = amountResult["Amount"].get<int>();
 
-    // Revisar si va a haber overflow y si sí, mix n' match los strings
-    sendMsg(clientSocket[0], json({{"Case", METADATA_FROM_NUM},
-                                   {"Num", fileAmount - 1}})
-                                 .dump());
-    json metadataResult = json::parse(receiveMsg(clientSocket[0]));
+    int firstAvailableBit;
 
-    int lastFileSize = metadataResult["File size"].get<int>();
-    int firstAvailableBit = metadataResult["Start bit"].get<int>() + lastFileSize;
+    if (fileAmount > 0)
+    {
+        // Revisar si va a haber overflow y si sí, mix n' match los strings
+        sendMsg(clientSocket[0], json({{"Case", METADATA_FROM_NUM},
+                                       {"Num", fileAmount - 1}})
+                                     .dump());
+        json metadataResult = json::parse(receiveMsg(clientSocket[0]));
+
+        int lastFileSize = metadataResult["File length"].get<int>();
+        firstAvailableBit = metadataResult["Start bit"].get<int>() + lastFileSize;
+    }
+    else
+    {
+        firstAvailableBit = 0;
+    }
 
     int starterBlock = (int)firstAvailableBit / 512;
     int bitsRemainingInBlock = 512 - (firstAvailableBit % 512);
@@ -292,6 +307,7 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
                                           {"Contents", finalStrings[disk]}})
                                         .dump());
     }
+    sleep(2);
 }
 
 std::string ControllerNode::letters2bin(std::string str)
@@ -356,7 +372,6 @@ List<std::string> ControllerNode::searchFiles(std::string searchString)
         // Revisar si es substring
         if (lowercaseName.find(searchString) != std::string::npos)
         {
-            std::cout << "found!" << '\n';
             foundNames.push_back(fileName);
         }
     }
@@ -391,7 +406,7 @@ std::string ControllerNode::retrieveFile(std::string fileName)
             std::cout << "Found the file" << std::endl;
 
             // Get the metadata for mixing binary data into the correct final string later on, based on which disks are parity disks for each block and doing xor reconstruction if needed
-            int fileSize = metadataResult["File size"].get<int>();
+            int fileSize = metadataResult["File length"].get<int>();
             int fileStartBit = metadataResult["Start bit"].get<int>();
 
             int starterBlock = (int)fileStartBit / 512;
@@ -410,7 +425,7 @@ std::string ControllerNode::retrieveFile(std::string fileName)
                 sendMsg(clientSocket[disk], json({{"Case", FILE_FROM_NUM},
                                                   {"Num", i}})
                                                 .dump());
-                json fileResult = json::parse(receiveMsg(clientSocket[0]));
+                json fileResult = json::parse(receiveMsg(clientSocket[disk]));
 
                 // check if disk hasn't been deleted/corrupted
                 if (fileResult["IfExists"].get<bool>())
