@@ -10,26 +10,12 @@ void print_list(ProcessNode* n)
         n = n->next;
     }
 }
-void UtilityText::swap(LeafNode* a, LeafNode* b)
-{
-    LeafNode t = *a;
-    *a = *b;
-    *b = t;
-}
 
-void UtilityText::bubbleSort(LeafNode* arr[], int n)
-{
-    int i, j;
-    for (i = 0; i < n-1; i++) {
-        // Last i elements are already in place
-        for (j = 0; j < n - i - 1; j++) {
-            if (arr[j]->frequency > arr[j + 1]->frequency)
-                swap(arr[j], arr[j + 1]);
-        }
-    }
-}
-
-
+/**
+ * \brief changes position of nodes
+ * @param a left node
+ * @param b right node
+ */
 void swap(ProcessNode* a, ProcessNode* b)
 {
     ProcessNode t = *a;
@@ -37,11 +23,15 @@ void swap(ProcessNode* a, ProcessNode* b)
     *b = t;
 }
 
+/**
+ * \brief bubbleSort algorithm arranges according to the frequency and placement of the algorithm
+ * @param arr array with nodes
+ * @param n size of array
+ */
 void bubbleSort(ProcessNode* arr[], int n)
 {
     int i, j;
     for (i = 0; i < n-1; i++) {
-        // Last i elements are already in place
         for (j = 0; j < n - i - 1; j++) {
             if (arr[j]->frequency > arr[j + 1]->frequency)
                 swap(arr[j], arr[j + 1]);
@@ -58,7 +48,12 @@ void printA(ProcessNode* arr[], int size)
     cout << endl;
 }
 
-
+/**
+ * \brief links nodes of array in a linkedlist
+ * @param arr array of arranged nodes
+ * @param len size of array
+ * @return linkedlist with arranged nodes
+ */
 ProcessNode* linkNodes(ProcessNode* arr[], int len)
 {
     ProcessNode* current;
@@ -78,6 +73,12 @@ ProcessNode* linkNodes(ProcessNode* arr[], int len)
 
 }
 
+/**
+ * \brief separates nodes and adds it to an array
+ * @param n linked list with disordered elements
+ * @param len size of array
+ * @return array with nodes
+ */
 ProcessNode* prepList(ProcessNode *n,int len){
 
 int counter = 0;
@@ -98,6 +99,12 @@ return linkNodes(arr,len);
 
 }
 
+/**
+ * \brief calculates frequency of each character in a string and calls methods and fucntions to
+ * arrange the list according to their frequency
+ * @param text recieved string
+ * @return arranged linkedlist
+ */
 ProcessNode* UtilityText::processText(string text){
     ProcessNode* start = new ProcessNode();
 

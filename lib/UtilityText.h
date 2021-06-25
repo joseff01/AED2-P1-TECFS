@@ -18,13 +18,13 @@ public:
     ProcessNode  *next = NULL;
 };
 
+//! Clas in charge of sroting and arrainging a given string
 class UtilityText {
 public:
     ProcessNode* processText(string text);
-    void bubbleSort(LeafNode* arr[], int n);
 private:
     void swap(LeafNode* a, LeafNode* b);
-    //LeafNode*arrangeList(LeafNode *node);
+
 
 };
 

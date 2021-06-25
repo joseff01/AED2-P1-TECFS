@@ -29,10 +29,14 @@ public:
     DecodeTreeNode *next;
 };
 
+//! Class in charge of coding and decoding messages trough Huffman Algorithm
 class Huffman
 {
 public:
     Huffman(string text);
+    void decode(LeafNode* root, string str);
+    void decodeTemp(LeafNode* root, int &index, string str);
+
 
 private:
     void huffmanTree(string text);
