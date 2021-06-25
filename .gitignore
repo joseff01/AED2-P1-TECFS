@@ -116,3 +116,5 @@ fabric.properties
 TECFS_Disk/startup.sh
 
 build-ceSEARCH-Desktop_Qt_5_15_2_GCC_64bit-Debug/
+
+*.pro.user
