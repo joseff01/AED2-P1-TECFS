@@ -51,7 +51,7 @@ void ControllerNode::serverSetup()
     std::cout << "Waiting for DiskNodes..." << std::endl;
 
     int connectionCounter = 0;
-    while (connectionCounter < 5)
+    while (connectionCounter < 6)
     {
         FD_ZERO(&readfds);
         FD_SET(sockfd, &readfds);
@@ -143,9 +143,33 @@ void ControllerNode::serverSetup()
     // storeFile("vara2", "hola, esta es la secuela al mejor libro de sus vidas. Este es mucho más largo porque ocupo un ejemplo "
     //                     "que se bien estúpidamente largo. Aunque ocupo parar para no llenar el disco completamente.");
     // std::cout << "\nBÚSQUEDAS:\n"
-    //           << searchFiles("vara") << "\n\n";
+    //           << searchFiles("BLOCK") << "\n\n";
     // std::cout << searchFiles("2") << std::endl;
-    // std::cout << retrieveFile("vara2") << std::endl;
+    // std::cout << retrieveFile("BLOCK1.txt") << std::endl;
+    // std::cout << retrieveFile("BLOCK2.txt") << std::endl;
+    // std::cout << retrieveFile("BLOCK3.txt") << std::endl;
+    // std::cout << retrieveFile("BLOCK4.txt") << std::endl;
+
+    //RequestLoop
+    bool closeFlag = false;
+    while (closeFlag)
+    {
+        json jsonMessage = json::parse(receiveMsg(clientSocket[5]));
+        switch ((int)jsonMessage["Case"])
+        {
+        case CLOSE:
+        {
+            closeFlag = false;
+            break;
+        }
+        case CEROBOT_REQUEST:
+        {
+            storeFile(jsonMessage["FileName"].get<std::string>(), jsonMessage["FileContents"].get<std::string>());
+            sendMsg(clientSocket[5], jsonMessage.dump());
+            break;
+        }
+        }
+    }
 }
 
 std::string ControllerNode::receiveMsg(int receiveSockfd)
@@ -158,7 +182,17 @@ std::string ControllerNode::receiveMsg(int receiveSockfd)
         perror("ERROR reading from socket");
         exit(1);
     }
-    std::string receivedMsg = std::string(buffer);
+
+    std::string receivedMsg;
+    if (n == 0)
+    {
+        std::cout << "Received empty string\n";
+        receivedMsg = json({{"Case", CLOSE}}).dump();
+    }
+    else
+    {
+        receivedMsg = std::string(buffer);
+    }
     std::cout << "Message received: " << receivedMsg << std::endl;
     return receivedMsg;
 }

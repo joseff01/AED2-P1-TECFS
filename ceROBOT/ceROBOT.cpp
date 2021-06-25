@@ -109,11 +109,12 @@ void ceROBOT::sendFileController() {
             string fileContents = streamBuffer.str();
             cout << fileContents;
             json fileJson;
-            fileJson["case"] = CEROBOT_REQUEST;
-            fileJson["fileName"] = fileName;
-            fileJson["fileContents"] = fileContents;
+            fileJson["Case"] = CEROBOT_REQUEST;
+            fileJson["FileName"] = fileName;
+            fileJson["FileContents"] = fileContents;
             string jsonSend = fileJson.dump();
             sendMsg(jsonSend);
+            receiveMsg();
         }
     }
 }
