@@ -25,7 +25,7 @@ void ceSEARCH_GUI::on_pushButton_clicked()
     jsonMsg["FileName"] = str;
 
     sendMsg(jsonMsg.dump());
-    json sJson = json::parse(receiveMsg());
+    json sJson = receiveJson();
 
     // Tomando en cuenta de que se supone que me mandan un List<string>
 
@@ -51,7 +51,14 @@ void ceSEARCH_GUI::on_listWidget_itemClicked(QListWidgetItem *item)
 
     //Asumiendo que recive un string enorme
 
-    std::string stringTemp;
+    json jsonMsg;
+    jsonMsg["Case"] = CESEARCH_GET_FILE;
+    jsonMsg["FileName"] = str;
+
+    sendMsg(jsonMsg.dump());
+    json sJson = receiveJson();
+
+    std::string stringTemp = sJson["Contents"].get<std::string>();
     QString qstr = QString::fromStdString(stringTemp);
     ui->plainTextEdit->setPlainText(qstr);
 }
