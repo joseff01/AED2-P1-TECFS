@@ -375,6 +375,7 @@ std::string ControllerNode::retrieveFile(std::string fileName)
     // Request contents of files and check name with fileName
     List<std::string> foundNames;
 
+    //Look for file with the name
     for (int i = 0; i < fileAmount; i++)
     {
         sendMsg(clientSocket[0], json({{"Case", METADATA_FROM_NUM},
@@ -386,24 +387,118 @@ std::string ControllerNode::retrieveFile(std::string fileName)
 
         if (fileName.compare(receivedFileName) == 0)
         {
+            // This executes when file with name was found
             std::cout << "Found the file" << std::endl;
 
-            sendMsg(clientSocket[0], json({{"Case", FILE_FROM_NUM},
-                                           {"Num", i}})
-                                         .dump());
-            json fileResult = json::parse(receiveMsg(clientSocket[0]));
-            // check field IfExists
-            if (fileResult["IfExists"].get<bool>())
-            {
+            // Get the metadata for mixing binary data into the correct final string later on, based on which disks are parity disks for each block and doing xor reconstruction if needed
+            int fileSize = metadataResult["File size"].get<int>();
+            int fileStartBit = metadataResult["Start bit"].get<int>();
 
-                std::string binContents = fileResult["Contents"].get<std::string>();
-                std::string contents = bin2letters(binContents);
-                return contents;
-            }
-            else
+            int starterBlock = (int)fileStartBit / 512;
+            int bitsRemainingInBlock = 512 - (fileStartBit % 512);
+            int bitsRemainingForFile = fileSize;
+            int currentBlock = starterBlock;
+
+            // Lists that will hold strings, receivedBinStrings receives the raw binary strings and fixedBinStrings will hold the final rearranged bin strings so all the parity blocks are on the last string and also with reconstruction done if necessary
+            List<std::string> fixedBinStrings = {"", "", "", "", ""};
+            List<std::string> receivedBinStrings;
+
+            int brokenDisk = -1;
+            for (int disk = 0; disk < 5; disk++)
             {
-                //reconstruir con paridad
+                // ask for contents of found file, for each disk
+                sendMsg(clientSocket[disk], json({{"Case", FILE_FROM_NUM},
+                                                  {"Num", i}})
+                                                .dump());
+                json fileResult = json::parse(receiveMsg(clientSocket[0]));
+
+                // check if disk hasn't been deleted/corrupted
+                if (fileResult["IfExists"].get<bool>())
+                {
+                    std::string binContents = fileResult["Contents"].get<std::string>();
+                    receivedBinStrings.push_back(binContents);
+                }
+                else
+                {
+                    if (brokenDisk >= 0) // if there's already another brokenDisk then there would be 2 and reconstruction would be impossible
+                    {
+                        std::cout << "Error: Más de un disco corrupto o faltante para el archivo que se intentó extraer.";
+                        return "";
+                    }
+                    //if disk isn't broken just push string normally
+                    receivedBinStrings.push_back("");
+                    brokenDisk = disk;
+                }
             }
+
+            if (brokenDisk >= 0) // if a disk needs to be fixed
+            {
+                std::string rebuiltString = std::string(fileSize, '0');
+
+                for (int disk = 0; disk < 5; disk++) // loop disks
+                {
+                    if (disk == brokenDisk)
+                    {
+                        continue;
+                    }
+                    for (int j = 0; j < fileSize; j++) // loop characters of string
+                    {
+                        int p = rebuiltString[j] - '0';            // get the int of the corresponding char representation
+                        p = p ^ receivedBinStrings[disk][j] - '0'; // xor
+                        rebuiltString[j] = p + '0';                // return back to char value for the number
+                    }
+                }
+
+                receivedBinStrings[brokenDisk] = rebuiltString;
+            }
+
+            // Generate the final bin strings sorted correctly with the parity info on the last string and the correct order for the other strings
+            while (bitsRemainingForFile > bitsRemainingInBlock)
+            {
+                int parityDisk = 4 - currentBlock;
+                for (int disk = 0; disk < 5; disk++)
+                {
+                    int listIndex;
+                    if (disk == parityDisk)
+                    {
+                        listIndex = 4;
+                    }
+                    else if (disk < parityDisk)
+                    {
+                        listIndex = disk;
+                    }
+                    else if (disk > parityDisk)
+                    {
+                        listIndex = disk - 1;
+                    }
+                    fixedBinStrings[listIndex].append(receivedBinStrings[disk].substr(fileSize - bitsRemainingForFile, bitsRemainingInBlock));
+                }
+                bitsRemainingForFile -= bitsRemainingInBlock;
+                currentBlock++;
+                bitsRemainingInBlock = 512;
+            }
+            int parityDisk = 4 - currentBlock;
+            for (int disk = 0; disk < 5; disk++)
+            {
+                int listIndex;
+                if (disk == parityDisk)
+                {
+                    listIndex = 4;
+                }
+                else if (disk < parityDisk)
+                {
+                    listIndex = disk;
+                }
+                else if (disk > parityDisk)
+                {
+                    listIndex = disk - 1;
+                }
+                fixedBinStrings[listIndex].append(receivedBinStrings[disk].substr(fileSize - bitsRemainingForFile, bitsRemainingForFile));
+            }
+
+            // Finally, concatenate strings
+            std::string wholeBinString = fixedBinStrings[0] + fixedBinStrings[1] + fixedBinStrings[2] + fixedBinStrings[3];
+            return bin2letters(wholeBinString);
         }
     }
     std::cout << "Error: no file found that goes by name '" << fileName << "'" << std::endl;
