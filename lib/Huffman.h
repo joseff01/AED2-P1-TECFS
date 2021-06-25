@@ -34,8 +34,8 @@ class Huffman
 {
 public:
     Huffman(string text);
-    void decode(LeafNode* root, string str);
-    void decodeTemp(LeafNode* root, int &index, string str);
+    void decode(LeafNode* root, string str,string* decoded);
+    void decodeTemp(LeafNode* root, int &index, string str, string* decoded);
 
 
 private:

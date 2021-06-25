@@ -49,12 +49,14 @@ string codedMessage(string og, DecodeTreeNode* root)
  * @param root Binary Tree to decode a recieved string
  * @param str encoded string given by the Hoffman Algorithm
  */
-void Huffman::decode(LeafNode* root, string str) {
+void Huffman::decode(LeafNode* root, string str,string* decoded) {
     int index = -1;
     cout << "\nDecoded string is: \n";
+
     while (index < (int) str.size() - 1) {
-        decodeTemp(&root[0], index, str);
+        decodeTemp(&root[0], index, str,decoded);
     }
+    cout<<"\n"<<*decoded<<endl;
 }
 
 /**
@@ -63,7 +65,7 @@ void Huffman::decode(LeafNode* root, string str) {
  * @param index key that indicates iterative index for string
  * @param str encoded string given by the Hoffman Algorithm
  */
-void Huffman::decodeTemp(LeafNode* root, int &index, string str)
+void Huffman::decodeTemp(LeafNode* root, int &index, string str,string* decoded)
 {
     if (root == nullptr) { //end of recursion
         return;
@@ -71,15 +73,16 @@ void Huffman::decodeTemp(LeafNode* root, int &index, string str)
 
     // found a leaf node
     if (!root->left && !root->right){
-        cout << root->letter;
+        //cout << root->letter;
+        *decoded += root->letter;
         return;
     }
     index++;
 
     if (str[index] =='0')
-        decodeTemp(root->left, index, str);
+        decodeTemp(root->left, index, str,decoded);
     else
-        decodeTemp(root->right, index, str);
+        decodeTemp(root->right, index, str,decoded);
 }
 
 /**
@@ -148,7 +151,12 @@ void Huffman::huffmanTree(string text) {
     //print_list(decoded);
 
     string str = codedMessage(og, decoded); // Final coded string
-    //decode(root[0],str);
+
+    /*
+    string x = "";
+    string* deco = &x;
+    decode(root[0],str,deco);
+     */
 }
 
 
