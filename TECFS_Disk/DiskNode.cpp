@@ -61,10 +61,9 @@ DiskNode::DiskNode(int diskNum) {
     cout << "Path: "<<libPath << endl;
 
     //Setup client-server connection
-    //clientSetup();
+    clientSetup();
 
     //RequestLoop
-    /*
     bool closeFlag = true;
     while (closeFlag){
         json jsonMessage = receiveJson();
@@ -91,9 +90,6 @@ DiskNode::DiskNode(int diskNum) {
             }
         }
     }
-     */
-    json jsonMessage;
-    recoverFile(jsonMessage);
 }
 
 /**
