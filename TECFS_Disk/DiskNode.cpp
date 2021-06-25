@@ -7,6 +7,7 @@
  */
 DiskNode::DiskNode(int diskNum) {
     //Read XML for Info
+
     XMLDocument XMLDoc;
     switch (diskNum) {
         case 1: {
@@ -60,9 +61,10 @@ DiskNode::DiskNode(int diskNum) {
     cout << "Path: "<<libPath << endl;
 
     //Setup client-server connection
-    clientSetup();
+    //clientSetup();
 
     //RequestLoop
+    /*
     bool closeFlag = true;
     while (closeFlag){
         json jsonMessage = receiveJson();
@@ -89,7 +91,9 @@ DiskNode::DiskNode(int diskNum) {
             }
         }
     }
-
+     */
+    json jsonMessage;
+    recoverFile(jsonMessage);
 }
 
 /**
@@ -178,9 +182,12 @@ void DiskNode::sendMsg(string stringMsg) {
  * Huffman code
  */
 void DiskNode::saveFile(json jsonMessage) {
-    string decodedData = jsonMessage["Contents"];
+    string decodedData =  jsonMessage["Contents"];
     string fileName = jsonMessage["Name"];
     int decodedDataLen = decodedData.length();
+    int initialDecodedDataLen = decodedDataLen;
+    int initialStartingBit = 0;
+    int initialStartingLength = 0;
     ifstream iMetadataFile;
     string metadataPath = libPath;
     metadataPath.append("/METADATA.txt");
@@ -203,12 +210,14 @@ void DiskNode::saveFile(json jsonMessage) {
             iMetadataFile.seekg(0, ios::beg);
             string lineFile;
             while (getline(iMetadataFile,lineFile)){}
-
+            cout << lineFile << endl;
             string sStartBit = lineFile.substr(13,4);
+            initialStartingBit = stoi(sStartBit);
             cout << "StartBit: " << sStartBit << endl;
             metadata.setStartBit(stoi(sStartBit));
 
             string sFileLength = lineFile.substr(22,4);
+            initialStartingLength = stoi(sFileLength);
             metadata.setFileLength(stoi(sFileLength));
             cout << "FileLength: " << metadata.getFileLength() << endl;
 
@@ -219,18 +228,46 @@ void DiskNode::saveFile(json jsonMessage) {
         }
         iMetadataFile.close();
         int blockNum = ((metadata.getStartBit()+metadata.getFileLength())/512)+1;
-        //Check if block overflows
         string substring2;
-        bool overflowFlag = false;
-        if(((512*blockNum) - ((metadata.getStartBit()%512)+metadata.getFileLength())) < decodedDataLen){
+
+        while (((512*blockNum) - (metadata.getStartBit()+metadata.getFileLength()) < decodedDataLen)){
             cout << "OVERFLOWING" << endl;
-            int divisionPoint = (512 - ((metadata.getStartBit()%512)+metadata.getFileLength()));
-            substring2 = decodedData.substr(divisionPoint, decodedDataLen-divisionPoint);
+            int divisionPoint = ((512*blockNum) - (metadata.getStartBit()+metadata.getFileLength()));
+            substring2 = decodedData.substr(0, divisionPoint);
             cout << substring2 << endl;
-            decodedData = decodedData.substr(0, divisionPoint);
+            decodedData = decodedData.substr(divisionPoint, decodedDataLen-divisionPoint);
             cout << decodedData << endl;
-            overflowFlag = true;
+
+            string blockPath = libPath;
+            blockPath.append("/BLOCK");
+            string sBlockNum = to_string(blockNum);
+            blockPath.append(sBlockNum);
+            blockPath.append(".txt");
+            cout << blockPath << endl;
+
+            DataBlock dataBlock(substring2,blockPath);
+
+            ifstream iBlockFile(dataBlock.getFilePath());
+
+            if (iBlockFile.is_open()){
+                string fileData;
+                getline(iBlockFile,fileData);
+                cout << fileData << endl;
+                fileData.replace(((metadata.getStartBit()+metadata.getFileLength())%512), dataBlock.getDataString().length(), dataBlock.getDataString());
+                cout << fileData << endl;
+                ofstream oBlockFile(dataBlock.getFilePath(), ios::trunc);
+                oBlockFile << fileData;
+                oBlockFile.close();
+            } else {
+                perror("ERROR unable to read Block text file");
+                exit(1);
+            }
+            blockNum++;
+            decodedDataLen = decodedData.length();
+            metadata.setFileLength(metadata.getFileLength()+dataBlock.getDataString().length());
         }
+
+        substring2 = decodedData;
 
         string blockPath = libPath;
         blockPath.append("/BLOCK");
@@ -239,11 +276,10 @@ void DiskNode::saveFile(json jsonMessage) {
         blockPath.append(".txt");
         cout << blockPath << endl;
 
-        //Instantiating relevant DataBlock
-        DataBlock dataBlock(decodedData,blockPath);
+        DataBlock dataBlock(substring2,blockPath);
 
-        //Getting values at the block file and replacing the needed bits
         ifstream iBlockFile(dataBlock.getFilePath());
+
         if (iBlockFile.is_open()){
             string fileData;
             getline(iBlockFile,fileData);
@@ -257,34 +293,7 @@ void DiskNode::saveFile(json jsonMessage) {
             perror("ERROR unable to read Block text file");
             exit(1);
         }
-        // If message overflows, set the second part on the next block
-        if (overflowFlag){
-            string blockPathOverflow = libPath;
-            blockPathOverflow.append("/BLOCK");
-            string sBlockNumOverflow = to_string(blockNum+1);
-            blockPathOverflow.append(sBlockNumOverflow);
-            blockPathOverflow.append(".txt");
-            cout << blockPathOverflow << endl;
 
-            //Instantiating next DataBlock
-            DataBlock dataBlockOverflow(substring2,blockPathOverflow);
-
-            ifstream iBlockFileOverflow(dataBlockOverflow.getFilePath());
-            if (iBlockFileOverflow.is_open()){
-                string fileData;
-                getline(iBlockFileOverflow,fileData);
-                cout << fileData << endl;
-                fileData.replace(0, dataBlockOverflow.getDataString().length(), dataBlockOverflow.getDataString());
-                cout << fileData << endl;
-                ofstream oBlockFile(dataBlockOverflow.getFilePath(), ios::trunc);
-                oBlockFile << fileData;
-                oBlockFile.close();
-            } else {
-                perror("ERROR unable to read Overflow Block text file");
-                exit(1);
-            }
-
-        }
         //Adding new file saved to the metadata list
         ofstream oMetadataFile(metadata.getFilePath(), ios::app);
         string newMetadataLine;
@@ -295,7 +304,7 @@ void DiskNode::saveFile(json jsonMessage) {
         }
         string sFileNumber = to_string(metadata.getFileNum());
         int amountZeroes = 4;
-        for (int i = 10; i < 1000; i = i*10) {
+        for (int i = 10; i <= 1000; i = i*10) {
             if (metadata.getFileNum()/i > 0){
                 amountZeroes--;
             } else {
@@ -309,10 +318,10 @@ void DiskNode::saveFile(json jsonMessage) {
         newMetadataLine.append(sFileNumber);
         newMetadataLine.append(" sb:");
 
-        int sbNew = metadata.getFileLength()+metadata.getStartBit();
+        int sbNew = initialStartingBit+initialStartingLength;
         string sSbNew = to_string(sbNew);
         amountZeroes = 4;
-        for (int i = 10; i < 1000; i = i*10) {
+        for (int i = 10; i <= 1000; i = i*10) {
             if (sbNew/i > 0){
                 amountZeroes--;
             } else {
@@ -326,10 +335,10 @@ void DiskNode::saveFile(json jsonMessage) {
         newMetadataLine.append(sSbNew);
         newMetadataLine.append(" len:");
 
-        int lengthFile = decodedDataLen;
+        int lengthFile = initialDecodedDataLen;
         string sLengthFile = to_string(lengthFile);
         amountZeroes = 4;
-        for (int i = 10; i < 1000; i = i*10) {
+        for (int i = 10; i <= 10000; i = i*10) {
             if (lengthFile/i > 0){
                 amountZeroes--;
             } else {
@@ -349,55 +358,15 @@ void DiskNode::saveFile(json jsonMessage) {
         //Add filename to metadata file
         oMetadataFile << newMetadataLine;
 
+        string jsonSend = jsonMessage.dump();
+        sendMsg(jsonSend);
+
     } else{
         perror("ERROR unable to read METADATA.txt");
         exit(1);
     }
 }
 
-/*
-void DiskNode::recoverBlock(json jsonMessage) {
-
-
-    int blockNum = 1; //Change Later
-
-    string blockPath = libPath;
-    blockPath.append("/BLOCK");
-    string sBlockNum = to_string(blockNum);
-    blockPath.append(sBlockNum);
-    blockPath.append(".txt");
-    cout << blockPath << endl;
-
-    //Instantiating relevant DataBlock
-    DataBlock dataBlock("",blockPath);
-
-    //Getting values at the block file and replacing the needed bits
-    ifstream iBlockFile(dataBlock.getFilePath());
-    if (iBlockFile.is_open()){
-        string fileData;
-        getline(iBlockFile,fileData);
-        iBlockFile.close();
-        cout << fileData << endl;
-        dataBlock.setDataString(fileData);
-    } else {
-        perror("ERROR unable to read Block text file");
-        exit(1);
-    }
-
-         *
-         *
-         *
-         *
-         *
-         * HUFFMAN ENCODING AND SEND MESSAGE
-         * JSON Message to send to controller node PENDING
-         *
-         *
-         *
-         *
-
-}
-*/
 
 /**
  * @brief DiskNode::recoverFile Sends to ControllerNode the indicated file of data.
@@ -441,68 +410,62 @@ void DiskNode::recoverFile(json jsonMessage) {
 
         int startBlockNum = (metadata.getStartBit()/512)+1;
         int endBlockNum = ((metadata.getStartBit()+metadata.getFileLength())/512)+1;
-        //Check if file overflows to another block
-        bool overflowFlag = false;
-        if(startBlockNum != endBlockNum){
-            cout << "File Overflows" << endl;
-            overflowFlag = true;
+        DataBlock dataBlock("","");
+        while ( startBlockNum != endBlockNum ){
+            cout << "OVERFLOWING" << endl;
+
+            string blockPath = libPath;
+            blockPath.append("/BLOCK");
+            string sBlockNum = to_string(startBlockNum);
+            blockPath.append(sBlockNum);
+            blockPath.append(".txt");
+            cout << blockPath << endl;
+
+            dataBlock.setFilePath(blockPath);
+
+            ifstream iBlockFile(dataBlock.getFilePath());
+
+            if (iBlockFile.is_open()){
+                jsonMessage["IfExists"] = true;
+                string fileData;
+                getline(iBlockFile,fileData);
+                cout << fileData << endl;
+                dataBlock.setDataString(dataBlock.getDataString() + fileData.substr(metadata.getStartBit()%512,512));
+                metadata.setFileLength(metadata.getFileLength() - (512 - (metadata.getStartBit() % 512)));
+                metadata.setStartBit(0);
+            } else {
+                jsonMessage["IfExists"] = false;
+            }
+            startBlockNum++;
         }
 
         string blockPath = libPath;
         blockPath.append("/BLOCK");
-        string sBlockNum = to_string(startBlockNum);
+        string sBlockNum = to_string(endBlockNum);
         blockPath.append(sBlockNum);
         blockPath.append(".txt");
         cout << blockPath << endl;
 
-        //Instantiating relevant DataBlock
-        DataBlock dataBlock("", blockPath);
+        dataBlock.setFilePath(blockPath);
 
-        //Getting values at the block file
         ifstream iBlockFile(dataBlock.getFilePath());
+
         if (iBlockFile.is_open()){
             jsonMessage["IfExists"] = true;
             string fileData;
             getline(iBlockFile,fileData);
             cout << fileData << endl;
-            if (overflowFlag){
-                dataBlock.setDataString(fileData.substr(metadata.getStartBit()%512,512));
-            } else {
-                dataBlock.setDataString(fileData.substr(metadata.getStartBit()%512,(metadata.getFileLength())%512));
-            }
-            cout << dataBlock.getDataString() << endl;
+            dataBlock.setDataString(dataBlock.getDataString() + fileData.substr(metadata.getStartBit()%512,metadata.getFileLength()));
+            metadata.setStartBit(0);
         } else {
             jsonMessage["IfExists"] = false;
         }
-        // If message overflows, get second part of file
-        if (overflowFlag){
-            string blockPathOverflow = libPath;
-            blockPathOverflow.append("/BLOCK");
-            string sBlockNumOverflow = to_string(endBlockNum);
-            blockPathOverflow.append(sBlockNumOverflow);
-            blockPathOverflow.append(".txt");
-            cout << blockPathOverflow << endl;
 
-            //Instantiating next DataBlock
-            DataBlock dataBlockOverflow("",blockPathOverflow);
-            ifstream iBlockFileOverflow(dataBlockOverflow.getFilePath());
-            if (iBlockFileOverflow.is_open()){
-                jsonMessage["IfExists"] = true;
-                string fileData;
-                getline(iBlockFileOverflow,fileData);
-                cout << fileData << endl;
-                dataBlockOverflow.setDataString(fileData.substr(0,(metadata.getStartBit()+metadata.getFileLength())%512));
-                cout << dataBlockOverflow.getDataString() << endl;
-            } else {
-                jsonMessage["IfExists"] = false;
-            }
-            dataBlock.setDataString(dataBlock.getDataString() + dataBlockOverflow.getDataString());
-        }
         cout << dataBlock.getDataString() << endl;
         jsonMessage["Contents"] = dataBlock.getDataString();
 
         string jsonSend = jsonMessage.dump();
-        sendMsg(jsonSend);
+        //sendMsg(jsonSend);
 
     } else{
         perror("ERROR unable to read METADATA.txt");
