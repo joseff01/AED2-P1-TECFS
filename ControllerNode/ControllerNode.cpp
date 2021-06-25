@@ -306,8 +306,8 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
                                           {"Name", fileName},
                                           {"Contents", finalStrings[disk]}})
                                         .dump());
+        receiveMsg(clientSocket[disk]);
     }
-    sleep(2);
 }
 
 std::string ControllerNode::letters2bin(std::string str)
