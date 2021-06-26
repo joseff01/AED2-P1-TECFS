@@ -17,6 +17,7 @@
 #include "../lib/RequestConstants.h"
 #include "../lib/List.h"
 
+//! Class in charge of handling communications between the ceHelpers and the DiskNodes
 class ControllerNode
 {
 private:

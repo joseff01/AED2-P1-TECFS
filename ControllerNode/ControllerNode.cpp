@@ -3,11 +3,19 @@
 #include <thread>
 #include "../lib/Huffman.h"
 
+/*!
+ * \brief Construct a new Controller Node:: Controller Node object
+ * 
+ */
 ControllerNode::ControllerNode()
 {
     serverSetup();
 }
 
+/*!
+ * \brief Sets up the server
+ * 
+ */
 void ControllerNode::serverSetup()
 {
     int option = 1;
@@ -176,6 +184,10 @@ void ControllerNode::serverSetup()
     ceSearchThread.join();
 }
 
+/*!
+ * \brief Loop that runs in a separate thread accepting responses from ceSEARCH
+ * 
+ */
 void ControllerNode::ceSearchLoop()
 {
     bool closeFlag = true;
@@ -207,6 +219,12 @@ void ControllerNode::ceSearchLoop()
     }
 }
 
+/*!
+ * \brief receives a message from the socket
+ * 
+ * \param receiveSockfd the socket from which it'll receive a message, whether disknoedes or cerobot or cesearch
+ * \return std::string with the message received
+ */
 std::string ControllerNode::receiveMsg(int receiveSockfd)
 {
     // TODO: agregar huffman decoding y recibir 2 mensajes, el segundo tiene la info para descomprimir
@@ -248,6 +266,12 @@ std::string ControllerNode::receiveMsg(int receiveSockfd)
     return receivedMsg;
 }
 
+/*!
+ * \brief Sends a message through the socket to the specified sockfd
+ * 
+ * \param sendSockfd 
+ * \param Msg 
+ */
 void ControllerNode::sendMsg(int sendSockfd, std::string Msg)
 {
     Huffman huff(Msg);
@@ -268,6 +292,12 @@ void ControllerNode::sendMsg(int sendSockfd, std::string Msg)
     }
 }
 
+/*!
+ * \brief Stores the file given by fileName and fileContents in the disknodes
+ * 
+ * \param fileName the name of the file to be stored
+ * \param fileContents the contents of the file
+ */
 void ControllerNode::storeFile(std::string fileName, std::string fileContents)
 {
     // Convert contents to binary
@@ -408,6 +438,12 @@ void ControllerNode::storeFile(std::string fileName, std::string fileContents)
     }
 }
 
+/*!
+ * \brief Transforms a regular string to a string of its binary representation
+ * 
+ * \param str The string to be transformed
+ * \return std::string the return binary string
+ */
 std::string ControllerNode::letters2bin(std::string str)
 {
     std::string binaryStr;
@@ -421,6 +457,12 @@ std::string ControllerNode::letters2bin(std::string str)
     return binaryStr;
 }
 
+/*!
+ * \brief Transforms a binary representation string to the appropiate regular character string
+ * 
+ * \param str binary string
+ * \return std::string regular string
+ */
 std::string ControllerNode::bin2letters(std::string str)
 {
     std::string charStr;
@@ -434,6 +476,12 @@ std::string ControllerNode::bin2letters(std::string str)
     return charStr;
 }
 
+/*!
+ * \brief Searches all the files stored for those whose name contains the searchstring as a substring
+ * 
+ * \param searchString the search string
+ * \return List<std::string> a list containing all the full names of files that contain the substring in their names
+ */
 List<std::string> ControllerNode::searchFiles(std::string searchString)
 {
     // Pasar searchString a lowercase
@@ -477,6 +525,12 @@ List<std::string> ControllerNode::searchFiles(std::string searchString)
     return foundNames;
 }
 
+/*!
+ * \brief retrieves a file from the raid specified by fileName
+ * 
+ * \param fileName the exact full name of the file to be fetched
+ * \return std::string the contents of the file
+ */
 std::string ControllerNode::retrieveFile(std::string fileName)
 {
 
