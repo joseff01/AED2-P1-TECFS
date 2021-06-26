@@ -248,7 +248,7 @@ void DiskNode::sendMsg(string stringMsg)
     {
         perror("send");
     }
-    sleep(0.4);
+    usleep(200);
     if (send(sockfd, treeMsg.c_str(), strlen(treeMsg.c_str()), 0) != strlen(treeMsg.c_str()))
     {
         perror("send");

@@ -196,12 +196,12 @@ void ceSEARCH_GUI::sendMsg(string stringMsg)
     json j = *root;
     std::string treeMsg = j.dump();
 
-    sleep(0.8);
+    usleep(200);
     if (send(sockfd, encodedMsg.c_str(), strlen(encodedMsg.c_str()), 0) != strlen(encodedMsg.c_str()))
     {
         perror("send");
     }
-    sleep(0.8);
+    usleep(200);
     if (send(sockfd, treeMsg.c_str(), strlen(treeMsg.c_str()), 0) != strlen(treeMsg.c_str()))
     {
         perror("send");

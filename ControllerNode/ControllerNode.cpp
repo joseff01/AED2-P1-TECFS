@@ -256,12 +256,12 @@ void ControllerNode::sendMsg(int sendSockfd, std::string Msg)
     json j = *root;
     std::string treeMsg = j.dump();
 
-    sleep(0.4);
+    usleep(200);
     if (send(sendSockfd, encodedMsg.c_str(), strlen(encodedMsg.c_str()), 0) != strlen(encodedMsg.c_str()))
     {
         perror("send");
     }
-    sleep(0.4);
+    usleep(200);
     if (send(sendSockfd, treeMsg.c_str(), strlen(treeMsg.c_str()), 0) != strlen(treeMsg.c_str()))
     {
         perror("send");

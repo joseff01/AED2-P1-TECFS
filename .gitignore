@@ -121,3 +121,5 @@ ceSEARCH.pro.user
 
 # script to test huffman mostly
 lib/main.cpp
+
+documentation/
